@@ -1,0 +1,15 @@
+# ######################################################################### $
+# Makefile for gtktblprint-pg.                                         		$
+# $Id::                                                                  	$
+# ######################################################################### $
+
+#AM_CPPFLAGS = -g -Wall `pkg-config --cflags --libs gtk+-2.0 glib-2.0`
+AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-2.0`
+
+#AM_LDFLAGS = -g -Wall -Wl,--rpath -Wl,/us/local/lib `pkg-config --libs gtk+-2.0 glib-2.0`
+#AM_LDFLAGS = -g -Wall `pkg-config --libs gtk+-2.0 glib-2.0 gmodule-2.0` libpq.lib gtk-win32-2.0 glib-2.0
+AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs glib-2.0` -lpq -lglib-2.0
+
+lib_LTLIBRARIES	= gtktblprintpg.la
+libpostgres_glib_la_SOURCES = gtktblprintpg.c
+include_HEADERS = gtktblprintpg.h
