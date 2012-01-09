@@ -1,5 +1,5 @@
 /* ************************************************************************ *
- * gtktblprintpg.c - Mainline module for GtkTblPrintPg library function     *
- * $Id::                                                                    *
+ * gtktblprintpg.c - Mainline module for GtkTblPrintPg library function     $
+ * $Id::                                                                    $
  * ************************************************************************ */
 

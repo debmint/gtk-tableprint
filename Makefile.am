@@ -1,6 +1,6 @@
 # ######################################################################### $
-# Makefile for gtktblprint-pg.                                         		$
-# $Id::                                                                  	$
+# Makefile for gtktblprint-pg.                                              $
+# $Id::                                                                     $
 # ######################################################################### $
 
 #AM_CPPFLAGS = -g -Wall `pkg-config --cflags --libs gtk+-2.0 glib-2.0`
