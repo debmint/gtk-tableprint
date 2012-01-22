@@ -12,5 +12,5 @@ AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-2.0`\
 			-L`pg_config --libdir` -lpq -lexpat -lglib-2.0
 
 lib_LTLIBRARIES	= libgtktblprintpg.la
-libgtktblprintpg_la_SOURCES = gtktblprintpg.c unixcmds.c
+libgtktblprintpg_la_SOURCES = gtktblprintpg.c unixcmds.c tableprint.c
 include_HEADERS = gtktblprintpg.h
