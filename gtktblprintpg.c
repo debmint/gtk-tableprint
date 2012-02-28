@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include "gtktblprintpg.h"
 
+#define CELLPAD_DFLT 10
 
 struct xml_udat {
     int depth;
@@ -201,12 +202,12 @@ add_cell_attribs (CELLINF *cell, const gchar **attrib_names,
             cell->percent = strtof (attrib_vals[idx], NULL);
         }
 
-        if (STRMATCH(attrib_names[idx], "cellwidth"))
+        else if (STRMATCH(attrib_names[idx], "cellwidth"))
         {
             cell->cellwidth = strtof (attrib_vals[idx], NULL);
         }
 
-        if (STRMATCH(attrib_names[idx], "textsource"))
+        else if (STRMATCH(attrib_names[idx], "textsource"))
         {
             const char *val = attrib_vals[idx];
 
@@ -226,15 +227,27 @@ add_cell_attribs (CELLINF *cell, const gchar **attrib_names,
             {
                 cell->txtsource = TSRC_PRINTF;
             }
+            else if (STRMATCH(val, "pageof"))
+            {
+                cell->txtsource = TSRC_PAGEOF;
+            }
+            else if (STRMATCH(val, "hline"))
+            {
+                cell->borderstyle = BDY_HLINE; 
+            }
+            else if (STRMATCH(val, "vbar"))
+            {
+                cell->borderstyle = BDY_VBAR;
+            }
             //TODO: add error reporting...
         }
 
-        if (STRMATCH(attrib_names[idx], "celltext"))
+        else if (STRMATCH(attrib_names[idx], "celltext"))
         {
             cell->celltext = g_strdup (attrib_vals[idx]);
         }
 
-        if (STRMATCH(attrib_names[idx], "align"))
+        else if (STRMATCH(attrib_names[idx], "align"))
         {
             cell->layoutalign = name_to_layout_align (attrib_vals[idx]);
         }
@@ -267,6 +280,8 @@ append_cell_def (const gchar **attrib_names, const gchar **attrib_vals,
 
     mycell = calloc (1, sizeof(CELLINF));
     mycell->grptype = GRPTY_CELL;
+    mycell->padleft = CELLPAD_DFLT;
+    mycell->padright = CELLPAD_DFLT;
 
     add_cell_attribs (mycell, attrib_names, attrib_vals);
 
@@ -319,12 +334,16 @@ static GRPINF *
 allocate_new_group (const char **attrib_names, const char **attrib_vals,
                     GRPINF *parent, int grptype)
 {
+    int grpidx = 0;
     GRPINF *newgrp = calloc (1, sizeof(GRPINF));
 
-    if (!parent && !GlobalData.grpHd)
+    if ((grptype == GRPTY_GROUP) || (grptype == GRPTY_BODY))
     {
-        GlobalData.grpHd = (GRPINF *)newgrp;
-        newgrp = GlobalData.grpHd;
+        if (!parent && !GlobalData.grpHd)
+        {
+            GlobalData.grpHd = (GRPINF *)newgrp;
+            newgrp = GlobalData.grpHd;
+        }
     }
 
     newgrp->grptype = grptype;
@@ -349,7 +368,90 @@ allocate_new_group (const char **attrib_names, const char **attrib_vals,
                     pango_font_description_copy (defaultcell->pangofont);
     }
 
+    while (attrib_names[grpidx])
+    {
+        if (STRMATCH(attrib_names[grpidx], "groupsource"))
+        {
+            newgrp->grpcol = PQfnumber (GlobalData.pgresult,
+                                            attrib_vals[grpidx]);
+        }
+        else if (STRMATCH(attrib_names[grpidx], "pointsabove"))
+        {
+            newgrp->pointsabove = atoi (attrib_vals[grpidx]);
+        }
+        else if (STRMATCH(attrib_names[grpidx], "pointsbelow"))
+        {
+            newgrp->pointsbelow = atoi (attrib_vals[grpidx]);
+        }
+        else if (STRMATCH(attrib_names[grpidx], "outerborder"))
+        {
+            if (STRMATCH(attrib_vals[grpidx], "singlebar"))
+            {
+                newgrp->borderstyle = SINGLEBAR;
+            }
+            else if (STRMATCH(attrib_vals[grpidx], "doublebar"))
+            {
+                newgrp->borderstyle = DBLBAR;
+            }
+            else if (STRMATCH(attrib_vals[grpidx], "singlebarheavy"))
+            {
+                newgrp->borderstyle = SINGLEBAR_HVY;
+            }
+            else if (STRMATCH(attrib_vals[grpidx], "singlebox"))
+            {
+                newgrp->borderstyle = SINGLEBOX;
+            }
+            else if (STRMATCH(attrib_vals[grpidx], "doublebox"))
+            {
+                newgrp->borderstyle = DBLBOX;
+            }
+        }
+        else if (STRMATCH(attrib_names[grpidx], "cellborder"))
+        {
+            if (STRMATCH(attrib_vals[grpidx], "hline"))
+            {
+                newgrp->borderstyle |= BDY_HLINE;
+            }
+            if (STRMATCH(attrib_vals[grpidx], "vbar"))
+            {
+                newgrp->borderstyle |= BDY_VBAR;
+            }
+        }
+
+        ++grpidx;
+    }
+
     return newgrp;
+}
+
+static ROWPAD *
+set_padding_attribs (ROWPAD *pad,
+                     const char **attrib_names, const char **attrib_vals)
+{
+    int idx = 0;
+
+    while (attrib_names[idx])
+    {
+        if (STRMATCH(attrib_names[idx], "padleft"))
+        {
+            pad->left = atoi (attrib_vals[idx]);
+        }
+        else if (STRMATCH(attrib_names[idx], "padright"))
+        {
+            pad->right = atoi (attrib_vals[idx]);
+        }
+        else if (STRMATCH(attrib_names[idx], "padtop"))
+        {
+            pad->top = atoi (attrib_vals[idx]);
+        }
+        else if (STRMATCH(attrib_names[idx], "padbottom"))
+        {
+            pad->bottom = atoi (attrib_vals[idx]);
+        }
+        //TODO: else error???
+    }
+
+    return pad;
 }
 
 static void start_element_main (GMarkupParseContext *context,
@@ -481,11 +583,51 @@ static void start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "pageheader"))
     {
+        if (!GlobalData.PageHeader)
+        {
+            GlobalData.PageHeader = allocate_new_group (attrib_names,
+                                        attrib_vals, NULL, GRPTY_PAGEHEADER);
+        }
+
         newgrp = GlobalData.PageHeader;
+    }
+    else if (STRMATCH(element_name, "padding"))
+    {
+        GRPINF *prnt = parent;    // Convenience
+        // TODO: parent==0 ->> error??
+
+        if (!prnt->padding)
+        {
+            prnt->padding = calloc (1, sizeof(ROWPAD));
+            // Init all to -1 to flag "not set"
+            prnt->padding->left = -1;
+            prnt->padding->right = -1;
+            prnt->padding->top = -1;
+            prnt->padding->bottom = -1;
+        }
+
+        prnt->padding = set_padding_attribs (prnt->padding, attrib_names,
+                                                            attrib_vals);
+        newgrp = prnt->padding;
+       
+    }
+    else if (STRMATCH(element_name, "defaultpadding"))
+    {
+        // TODO: if parent, error???
+
+        if (!GlobalData.DefaultPadding)
+        {
+            GlobalData.DefaultPadding = calloc (1, sizeof(ROWPAD));
+        }
+
+        GlobalData.DefaultPadding =
+            set_padding_attribs (GlobalData.DefaultPadding,
+                                                attrib_names, attrib_vals);
+        newgrp = GlobalData.DefaultPadding;
     }
     else //if (STRMATCH(element_name, "docheader"))
     {
-        newgrp = GlobalData.DocHeader;
+        //newgrp = GlobalData.DocHeader;
     }
 
     g_markup_parse_context_push (context, &sub_prs, newgrp);

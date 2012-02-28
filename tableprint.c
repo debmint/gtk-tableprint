@@ -31,15 +31,19 @@ pq_data_from_colname (PGresult *res, int row, char *colname)
  *      This is called on the first encounter with the cell.  It is not *
  *      called in the initialization routine since the Page setup might *
  *      be changed after this cell is initialized.                      *
+ * NOTE: We tried to use gtk_page_setup_get_page_width, (after defining *
+ *      the PageSetup structure, but it gave a value of only a little   *
+ *      more than 10% of what was needed to get the full page width.    *
  * ******************************************************************** */
 
 static void
 set_col_values (CELLINF *cell, GLOBDAT *self)
 {
-    double ps = gtk_page_setup_get_page_width(self->Page_Setup, GTK_UNIT_POINTS);
+    // The following is for debugging purposes
+/*    double ps = gtk_page_setup_get_page_width(self->Page_Setup, GTK_UNIT_POINTS);
     double pc = gtk_print_context_get_width(self->context);
     printf ("\nPage width returned by 'gtk_page_setup_get_page_width' = %f\n",ps);
-    printf ("\nPage width returned by 'gtk_print_context_get_width' = %f\n\n",pc);
+    printf ("\nPage width returned by 'gtk_print_context_get_width' = %f\n\n",pc);*/
  //   cell->cellwidth =
  //       (cell->percent *  gtk_page_setup_get_page_width(self->Page_Setup,
  //               GTK_UNIT_POINTS)/100);
@@ -117,11 +121,12 @@ set_cell_font_description (GLOBDAT * self, CELLINF *cell)
  * ******************************************************************** */
 
 static int
-render_cell (CELLINF *cell, int rownum, GLOBDAT *self)
+render_cell (CELLINF *cell, int rownum, double rowtop, GLOBDAT *self)
 {
     char *celltext;
     int CellHeight = 0;
     PangoRectangle log_rect;
+    gboolean deletecelltext = FALSE;
 
     if (!cell->pangofont)
     {
@@ -139,25 +144,36 @@ render_cell (CELLINF *cell, int rownum, GLOBDAT *self)
         case TSRC_NOW:
             //TODO:
             break;
+        case TSRC_PAGE:
+            celltext = g_strdup_printf ("Page %d", self->pageno + 1);
+            deletecelltext = TRUE;
+            break;
+        case TSRC_PAGEOF:
+            celltext = g_strdup_printf ("Page %d of %d", self->pageno + 1,
+                                                            self->TotPages);
+            deletecelltext = TRUE;
+            break;
         case TSRC_PRINTF:
             //TODO:
             break;
     }
 
-    if (celltext && strlen(celltext))
+    if (celltext && strlen (celltext))
     {
         PangoLayout *layout =
                     gtk_print_context_create_pango_layout (self->context);
         pango_layout_set_font_description (layout, cell->pangofont);
-        pango_layout_set_width (layout, (int)(cell->cellwidth * PANGO_SCALE));
+        pango_layout_set_width (layout,
+                (cell->cellwidth - cell->padleft - cell->padright) *
+                 PANGO_SCALE);
         pango_layout_set_alignment (layout, cell->layoutalign);
-        pango_layout_set_text(layout, celltext, -1);
-        pango_layout_get_extents(layout, NULL, &log_rect);
+        pango_layout_set_text (layout, celltext, -1);
+        pango_layout_get_extents (layout, NULL, &log_rect);
         CellHeight = log_rect.height;
 
         if (self->DoPrint)
         {
-            cairo_move_to (self->cr, cell->x, self->ypos);
+            cairo_move_to (self->cr, cell->x + cell->padleft, rowtop);
             pango_cairo_show_layout (self->cr, layout);
         }
 
@@ -168,7 +184,86 @@ render_cell (CELLINF *cell, int rownum, GLOBDAT *self)
         fprintf (stderr, "---Empty data for column: %s\n", cell->celltext);
     }
 
+    if (deletecelltext)
+    {
+        g_free (celltext);
+    }
+
     return CellHeight/PANGO_SCALE;
+}
+
+/* ******************************************************************** *
+ * hline () - Renders a horizontal line across the page                 *
+ * ******************************************************************** */
+
+double
+hline (GLOBDAT *self, double ypos, double weight)
+{
+    if (self->DoPrint)
+    {
+        cairo_set_line_width (self->cr, weight);
+        cairo_move_to (self->cr, 0, ypos);
+        cairo_rel_line_to (self->cr,
+                            gtk_print_context_get_width (self->context), 0);
+        cairo_stroke (self->cr);
+    }
+
+    return 2;
+}
+
+/* **************************************************************** *
+ * group_hline_top() - Render a single or double line at the top of *
+ *          a group, header, etc.                                   *
+ * Returns: The value to add to the current ypos.                   *
+ * **************************************************************** */
+
+static double
+group_hline_top (GLOBDAT *self, double rowtop, int borderstyle)
+{
+    double linerow = rowtop;
+
+    if (borderstyle & (SINGLEBAR_HVY | DBLBAR))
+    {
+        linerow += hline (self, linerow, 1.0);
+    }
+    else if (borderstyle & SINGLEBAR)
+    {
+        linerow += hline (self, linerow, 0.5);
+    }
+
+    if (borderstyle & DBLBAR)
+    {
+        linerow += hline (self, linerow, 0.5);
+    }
+
+    return linerow - rowtop;
+}
+
+/* **************************************************************** *
+ * group_hline_bottom() - Render a single or double line below a    *
+ *            group, header, etc.                                   *
+ * **************************************************************** */
+
+static double
+group_hline_bottom (GLOBDAT *self, double begintop, int borderstyle)
+{
+    double rowtop = begintop;
+
+    if (borderstyle & (SINGLEBAR | DBLBAR))
+    {
+        rowtop += hline (self, rowtop, 0.5);
+    }
+    else if (borderstyle & SINGLEBAR_HVY)
+    {
+        rowtop += hline (self, rowtop, 1.0);
+    }
+
+    if (borderstyle & DBLBAR)
+    {
+        rowtop += hline (self, rowtop, 1.0);
+    }
+
+    return rowtop - begintop;
 }
 
 /* ******************************************************************** *
@@ -180,17 +275,37 @@ static int
 render_row (GLOBDAT *self,
             GtkPrintContext *context,
             GPtrArray *coldefs,
+            ROWPAD *padding,
+            int borderstyle,
             int rownum)
 {
     int colnum;
+    double rowtop = self->ypos;
     int MaxHeight = 0;
 
+    if (padding)
+    {
+        if (padding->top == -1)
+        {
+            padding->top = self->DefaultPadding->top;
+        }
+
+        rowtop += padding->top;
+    }
+
+/*    if (rowtop >= self->pageheight)
+    {
+        return rowtop - self->ypos;
+    }*/
+
+    // Upper line for row
     for (colnum = 0; colnum < coldefs->len; colnum++)
     {
         int CellHeight;
         
         CellHeight =
-            render_cell ((CELLINF *)(coldefs->pdata[colnum]), rownum, self);
+            render_cell ((CELLINF *)(coldefs->pdata[colnum]), rownum,
+                   rowtop, self);
 
         if (CellHeight > MaxHeight)
         {
@@ -198,7 +313,42 @@ render_row (GLOBDAT *self,
         }
     }
 
-    return MaxHeight;
+    // Do the VBars now while "rowtop" still points to the top of the row
+    if (borderstyle & BDY_VBAR)
+    {
+        int idx;
+
+        if (self->DoPrint)
+        {
+            for (idx = 1; idx < coldefs->len; idx++)
+            {
+                if (self->DoPrint)
+                {
+                    int rmargin = gtk_print_context_get_width (self->context);
+
+                    cairo_set_line_width (self->cr, 2.0);
+                    cairo_move_to (self->cr,
+                            ((CELLINF *)(coldefs->pdata[idx]))->x, rowtop);
+                    cairo_rel_line_to (self->cr, 0, MaxHeight);
+                    cairo_stroke (self->cr);
+                }
+            }
+        }
+    }
+
+    rowtop += MaxHeight;
+
+    if (padding)
+    {
+        if (padding->bottom == -1)
+        {
+            padding->bottom = self->DefaultPadding->bottom;
+        }
+
+        rowtop += padding->bottom;
+    }
+
+    return rowtop - self->ypos;
 }
 
 /* ******************************************************************** *
@@ -217,9 +367,11 @@ render_row (GLOBDAT *self,
  * ******************************************************************** */
 
 static int
-render_row_grp(GLOBDAT *self,       // Global Data storage
+render_row_grp (GLOBDAT *self,       // Global Data storage
         GtkPrintContext *context,   // The GtkPrintcontext
         GPtrArray *col_defs,         // The coldefs array
+        ROWPAD *padding,
+        int borderstyle,
         // formatting->body,           // 
         // formatting
         PangoLayout *layout,
@@ -234,12 +386,24 @@ render_row_grp(GLOBDAT *self,       // Global Data storage
         return cur_row;
     }
 
+    // Render HLINE above first line, if applicable
+    if (borderstyle & BDY_HLINE)
+    {
+        self->ypos += hline (self, self->ypos, 1.0);
+    }
+
     for (cur_idx = cur_row; cur_idx < end_row; cur_idx++)
     {
-        (self->ypos) += render_row (self, context, col_defs, cur_idx);
+        (self->ypos) += render_row (self, context, col_defs, padding,
+                            borderstyle, cur_idx);
 
-        if (self->ypos >= gtk_page_setup_get_page_height (self->Page_Setup,
-                                                            GTK_UNIT_POINTS))
+        // Render HLINE below each line, if applicable
+        if (borderstyle & BDY_HLINE)
+        {
+            self->ypos += hline (self, self->ypos, 1.0);
+        }
+
+        if (self->ypos >= self->pageheight)
         {
             ++cur_idx;      // Position to next data row for return
             return cur_idx;
@@ -247,6 +411,36 @@ render_row_grp(GLOBDAT *self,       // Global Data storage
     }
 
     return cur_idx;
+}
+
+static void
+render_header (GLOBDAT *self, GtkPrintContext *context, GRPINF *curhdr)
+{
+    if (curhdr->pointsabove)
+    {
+        self->ypos += curhdr->pointsabove;
+    }
+
+    if (curhdr->celldefs)
+    {
+        if (!curhdr->cells_formatted)
+        {
+            //TODO: We may need to add in Left Margin
+            self->xpos = 0;
+            g_ptr_array_foreach (curhdr->celldefs,
+                    (GFunc)set_col_values, self);
+            curhdr->cells_formatted = TRUE;
+        }
+
+        render_row_grp (self, context, curhdr->celldefs,
+                            curhdr->padding, curhdr->borderstyle, self->layout,
+                            self->datarow, self->datarow + 1);
+    }
+
+    if (curhdr->pointsbelow)
+    {
+        self->ypos += curhdr->pointsbelow;
+    }
 }
 
 /* ******************************************************************** *
@@ -264,22 +458,23 @@ render_row_grp(GLOBDAT *self,       // Global Data storage
 static void
 render_body (GLOBDAT *self,
                 GtkPrintContext *context,
-                GRPINF *curgrp,
+                GRPINF *bdy,
                 int maxrow)
 {
-    if (curgrp->celldefs)
+    if (bdy->celldefs)
     {
-        if (!curgrp->cells_formatted)
+        if (!bdy->cells_formatted)
         {
             //TODO: We may need to add in Left Margin
             self->xpos = 0;
-            g_ptr_array_foreach(curgrp->celldefs, (GFunc)set_col_values,
+            g_ptr_array_foreach (bdy->celldefs, (GFunc)set_col_values,
                                 self);
-            curgrp->cells_formatted = TRUE;
+            bdy->cells_formatted = TRUE;
         }
     }
 
-    self->datarow = render_row_grp(self, context,  curgrp->celldefs,
+    self->datarow = render_row_grp (self, context,  bdy->celldefs,
+                bdy->padding, bdy->borderstyle,
                 //self->formatting->body,
                 //self->formatting,
                 self->layout,
@@ -303,47 +498,69 @@ render_group(GLOBDAT *self,
                 int maxrow)
 {
     int grp_idx = self->datarow;
-    double y_pos = self->ypos;
-    //int grp_col = PQfnumber(self->pgresult, curgrp->grpcol);
+    //double y_pos = self->ypos;
+    int grp_y = self->ypos,
+        grp_top;
+    GRPINF *cg = curgrp;
     //PangoLayout *layout = set_layout(self, render_params, self->layout);
 
-    if (curgrp->header)
+    grp_top = self->ypos;
+
+    // Try to avoid leaving hanging group headers at the bottom of the
+    // page with no body data...
+    // TODO: We need to make this more correct.. This is just a hack
+
+    while (cg->grpchild->grptype == GRPTY_GROUP)
     {
-        if (curgrp->header->celldefs)
-        {
-            if (!curgrp->header->cells_formatted)
-            {
-                //TODO: We may need to add in Left Margin
-                self->xpos = 0;
-                g_ptr_array_foreach(curgrp->header->celldefs,
-                        (GFunc)set_col_values, self);
-                curgrp->header->cells_formatted = TRUE;
-            }
+        //grp_y += cg->pointsabove + self->textheight + cg->pointsbelow;
+        grp_y += self->textheight;
+        cg = cg->grpchild;
+    }
 
-            render_row_grp (self, context, curgrp->header->celldefs,
-                            self->layout, self->datarow, self->datarow + 1);
-        }
-    }       // if (curgrp->header)
+    if (grp_y + (self->textheight * 2) >= self->pageheight)
+    {
+        return self->datarow;
+    }
 
-    while ((grp_idx < maxrow) &&
-            (y_pos < gtk_page_setup_get_page_height (self->Page_Setup,
-                                                     GTK_UNIT_POINTS)))
+    // This loop parses the entire range passed to the group.
+    while ((grp_idx < maxrow) && (self->ypos < self->pageheight))
     {
         char *grptxt = PQgetvalue(self->pgresult, grp_idx, curgrp->grpcol);
+
+        /* Break the main group down into subgroups (or the body)
+           Do this by comparing the string in the column defining the group.
+           The variable "grp_idx" is the max value (+ 1) for the rows that
+           will be members of the subgroup (or body set)
+        */
 
         do {
             ++grp_idx;
         } while ((grp_idx < maxrow) && STRMATCH(grptxt,
-                        PQgetvalue(self->pgresult,grp_idx, curgrp->grpcol)));
+                    PQgetvalue (self->pgresult, grp_idx, curgrp->grpcol)));
+
+        // Print Group Header, if applicable...
+
+        if (curgrp->pointsabove)
+        {
+            self->ypos += curgrp->pointsabove;
+        }
+
+        if (curgrp->header)
+        {
+            render_header (self, context, curgrp->header);
+        }       // if (curgrp->header)
 
         //if(render_params->pts_above){self->ypos += render_params->pts_above;}
         // Possibly add group-header...
+
+        // Now render the current range of data.  It will be
+        // either another subgroup or the body of data.
 
         if (curgrp->grpchild)
         {
             if (curgrp->grpchild->grptype == GRPTY_GROUP)
             {
-                render_group (self, context, curgrp->grpchild, maxrow);
+                render_group (self, context, curgrp->grpchild, grp_idx);
 
                 // TODO: We're not even trying to access the group's cell
                 // defs ATM.  There probably should not be any cell defs for
@@ -351,7 +568,7 @@ render_group(GLOBDAT *self,
             }
             else if (curgrp->grpchild->grptype == GRPTY_BODY)
             {
-                render_body (self, context, curgrp->grpchild, maxrow);
+                render_body (self, context, curgrp->grpchild, grp_idx);
             }
         }
         else
@@ -360,8 +577,32 @@ render_group(GLOBDAT *self,
         }
 
         // Render footers here???
-        if (self->ypos >= gtk_page_setup_get_page_height (self->Page_Setup,
-                                                            GTK_UNIT_POINTS))
+        if (self->DoPrint)
+        {
+            if (curgrp->borderstyle & (SINGLEBOX | DBLBOX))
+            {
+                cairo_set_line_width (self->cr, 4.0);
+                cairo_rectangle (self->cr, 0, grp_top,
+                                   gtk_print_context_get_width (self->context),
+                                   self->ypos - grp_top); 
+                cairo_stroke (self->cr);
+            }
+
+            if (curgrp->borderstyle & DBLBOX)
+            {
+                cairo_set_line_width (self->cr, 2.0);
+                cairo_rectangle (self->cr, 16, grp_top + 16,
+                            gtk_print_context_get_width (self->context) - 32,
+                            self->ypos - grp_top - 32); 
+                cairo_stroke (self->cr);
+            }
+        }
+
+        if (curgrp->pointsbelow)
+        {
+            self->ypos += curgrp->pointsbelow;
+        }
+        if (self->ypos >= self->pageheight)
         {
             break;
         }
@@ -377,14 +618,28 @@ render_page(GLOBDAT *self, GtkPrintContext *context)
 
     self->ypos = 0;
 
-    if (!self->pageno)       // If first page, print Docheader if present
+    if (self->PageHeader)
+    {
+        if (self->PageHeader->celldefs)
+        {
+            if (!self->PageHeader->cells_formatted)
+            {
+                //TODO: We may need to add in Left Margin
+                self->xpos = 0;
+                g_ptr_array_foreach(self->PageHeader->celldefs,
+                        (GFunc)set_col_values, self);
+                self->PageHeader->cells_formatted = TRUE;
+            }
+
+            render_row_grp (self, context, self->PageHeader->celldefs, NULL,
+                            0, self->layout, self->datarow, self->datarow + 1);
+        }
+    }
+    else if (!self->pageno)       // If first page, print Docheader if present
     {
         if (self->DocHeader)
         {
         }
-    }
-    else if (self->PageHeader)
-    {
     }
 
     curgrp = self->grpHd;
@@ -407,8 +662,8 @@ draw_page (GtkPrintOperation *operation, GtkPrintContext *context,
                                 int page_nr, GLOBDAT *self)
 {
     self->pageno = page_nr;
-    self->pageheight = gtk_print_context_get_height (self->context);
     self->context = context;
+    self->pageheight = gtk_print_context_get_height (self->context);
 //    gtk_print_operation_set_unit (operation, GTK_UNIT_POINTS);
     self->cr = gtk_print_context_get_cairo_context (context);
     self->layout = gtk_print_context_create_pango_layout (context);
@@ -420,13 +675,25 @@ static void
 begin_print (GtkPrintOperation *operation, GtkPrintContext *context,
                                         GLOBDAT *self)
 {
+    PangoLayout *lo;
+    PangoRectangle log_rect;
+
     self->datarow = 0;
     self->pageno = 0;
+    self->context = context;
+    self->pageheight = gtk_print_context_get_height (self->context);
     self->TotPages = 0;
     self->DoPrint = FALSE;
-    self->context = context;
 //    gtk_print_operation_set_unit (operation, GTK_UNIT_POINTS);
     self->layout = gtk_print_context_create_pango_layout (context);
+
+    lo = pango_layout_copy (self->layout);
+    pango_layout_set_font_description (lo, defaultcell->pangofont);
+    pango_layout_set_width (lo, gtk_print_context_get_width (self->context));
+    pango_layout_set_text (lo, "Ty", -1);
+    pango_layout_get_extents (lo, NULL, &log_rect);
+    self->textheight = log_rect.height/PANGO_SCALE;
+    g_object_unref (lo);
 
     while (self->datarow < PQntuples (self->pgresult))
     {
