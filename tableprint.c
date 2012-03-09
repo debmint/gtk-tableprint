@@ -9,6 +9,11 @@
 #include <cairo.h>
 #include "gtktblprintpg.h"
 
+typedef struct page_def {
+    int firstrow,
+        lastrow;
+} PG_DEF;
+
 GtkPrintOperation *po;
 static GError *g_err;
 
@@ -273,7 +278,6 @@ group_hline_bottom (GLOBDAT *self, double begintop, int borderstyle)
 
 static int
 render_row (GLOBDAT *self,
-            GtkPrintContext *context,
             GPtrArray *coldefs,
             ROWPAD *padding,
             int borderstyle,
@@ -355,7 +359,6 @@ render_row (GLOBDAT *self,
  * render_row_grp() - Render a series of rows from an array of cell     *
  *          defs.                                                       *
  * Passed:  (1) - self - the GlobalList of data                         *
- *          (2) - context - The GtkPrintContext                         *
  *          (3) - current group                                         *
  *          //(3) - self->formatting->body                                *
  *          //(4) - self->formatting                                      *
@@ -368,7 +371,6 @@ render_row (GLOBDAT *self,
 
 static int
 render_row_grp (GLOBDAT *self,       // Global Data storage
-        GtkPrintContext *context,   // The GtkPrintcontext
         GPtrArray *col_defs,         // The coldefs array
         ROWPAD *padding,
         int borderstyle,
@@ -379,6 +381,7 @@ render_row_grp (GLOBDAT *self,       // Global Data storage
         int end_row)                // The last row to print + 1
 {
     int cur_idx = cur_row;
+    double max_y = self->pageheight - self->textheight;
 
     // If no cell defs, return...
     if (!col_defs)
@@ -389,12 +392,14 @@ render_row_grp (GLOBDAT *self,       // Global Data storage
     // Render HLINE above first line, if applicable
     if (borderstyle & BDY_HLINE)
     {
-        self->ypos += hline (self, self->ypos, 1.0);
+        double line_ht = hline (self, self->ypos, 1.0);
+        self->ypos += line_ht;
+        max_y -= line_ht * 2;
     }
 
     for (cur_idx = cur_row; cur_idx < end_row; cur_idx++)
     {
-        (self->ypos) += render_row (self, context, col_defs, padding,
+        (self->ypos) += render_row (self, col_defs, padding,
                             borderstyle, cur_idx);
 
         // Render HLINE below each line, if applicable
@@ -403,7 +408,7 @@ render_row_grp (GLOBDAT *self,       // Global Data storage
             self->ypos += hline (self, self->ypos, 1.0);
         }
 
-        if (self->ypos >= self->pageheight)
+        if (self->ypos >= max_y)
         {
             ++cur_idx;      // Position to next data row for return
             return cur_idx;
@@ -414,7 +419,7 @@ render_row_grp (GLOBDAT *self,       // Global Data storage
 }
 
 static void
-render_header (GLOBDAT *self, GtkPrintContext *context, GRPINF *curhdr)
+render_header (GLOBDAT *self, GRPINF *curhdr)
 {
     if (curhdr->pointsabove)
     {
@@ -432,7 +437,7 @@ render_header (GLOBDAT *self, GtkPrintContext *context, GRPINF *curhdr)
             curhdr->cells_formatted = TRUE;
         }
 
-        render_row_grp (self, context, curhdr->celldefs,
+        render_row_grp (self, curhdr->celldefs,
                             curhdr->padding, curhdr->borderstyle, self->layout,
                             self->datarow, self->datarow + 1);
     }
@@ -457,7 +462,6 @@ render_header (GLOBDAT *self, GtkPrintContext *context, GRPINF *curhdr)
 
 static void
 render_body (GLOBDAT *self,
-                GtkPrintContext *context,
                 GRPINF *bdy,
                 int maxrow)
 {
@@ -473,7 +477,7 @@ render_body (GLOBDAT *self,
         }
     }
 
-    self->datarow = render_row_grp (self, context,  bdy->celldefs,
+    self->datarow = render_row_grp (self, bdy->celldefs,
                 bdy->padding, bdy->borderstyle,
                 //self->formatting->body,
                 //self->formatting,
@@ -493,7 +497,6 @@ render_body (GLOBDAT *self,
 
 static int
 render_group(GLOBDAT *self,
-                GtkPrintContext *context,
                 GRPINF *curgrp,
                 int maxrow)
 {
@@ -510,7 +513,11 @@ render_group(GLOBDAT *self,
     // page with no body data...
     // TODO: We need to make this more correct.. This is just a hack
 
-    while (cg->grpchild->grptype == GRPTY_GROUP)
+    /* NOTE:: Since we are now doing a dry run during the "begin-print"
+     * portion of the printing, this may not be necessary
+     */
+
+/*    while (cg->grpchild->grptype == GRPTY_GROUP)
     {
         //grp_y += cg->pointsabove + self->textheight + cg->pointsbelow;
         grp_y += self->textheight;
@@ -520,7 +527,7 @@ render_group(GLOBDAT *self,
     if (grp_y + (self->textheight * 2) >= self->pageheight)
     {
         return self->datarow;
-    }
+    }*/
 
     // This loop parses the entire range passed to the group.
     while ((grp_idx < maxrow) && (self->ypos < self->pageheight))
@@ -547,7 +554,7 @@ render_group(GLOBDAT *self,
 
         if (curgrp->header)
         {
-            render_header (self, context, curgrp->header);
+            render_header (self, curgrp->header);
         }       // if (curgrp->header)
 
         //if(render_params->pts_above){self->ypos += render_params->pts_above;}
@@ -560,7 +567,7 @@ render_group(GLOBDAT *self,
         {
             if (curgrp->grpchild->grptype == GRPTY_GROUP)
             {
-                render_group (self, context, curgrp->grpchild, grp_idx);
+                render_group (self, curgrp->grpchild, grp_idx);
 
                 // TODO: We're not even trying to access the group's cell
                 // defs ATM.  There probably should not be any cell defs for
@@ -568,7 +575,7 @@ render_group(GLOBDAT *self,
             }
             else if (curgrp->grpchild->grptype == GRPTY_BODY)
             {
-                render_body (self, context, curgrp->grpchild, grp_idx);
+                render_body (self, curgrp->grpchild, grp_idx);
             }
         }
         else
@@ -612,11 +619,21 @@ render_group(GLOBDAT *self,
 }
 
 static void
-render_page(GLOBDAT *self, GtkPrintContext *context)
+render_page(GLOBDAT *self)
 {
     GRPINF *curgrp;
+    int lastrow;
 
     self->ypos = 0;
+
+    if (self->DoPrint)
+    {
+        lastrow = g_ptr_array_index (self->PageEndRow, self->pageno);
+    }
+    else
+    {
+        lastrow = PQntuples (self->pgresult);
+    }
 
     if (self->PageHeader)
     {
@@ -631,7 +648,7 @@ render_page(GLOBDAT *self, GtkPrintContext *context)
                 self->PageHeader->cells_formatted = TRUE;
             }
 
-            render_row_grp (self, context, self->PageHeader->celldefs, NULL,
+            render_row_grp (self, self->PageHeader->celldefs, NULL,
                             0, self->layout, self->datarow, self->datarow + 1);
         }
     }
@@ -647,13 +664,13 @@ render_page(GLOBDAT *self, GtkPrintContext *context)
     // Now we're ready to render the data...
     if (curgrp->grptype == GRPTY_GROUP)
     {
-        render_group (self, context, curgrp, PQntuples (self->pgresult));
+        render_group (self, curgrp, lastrow);
     }
     // TODO: Need to check for some other type than GRPTY_BODY???
     // Also, this is wrong, as we don't have a "render_group" function
     else
     {
-        render_body (self, context, curgrp, PQntuples (self->pgresult));
+        render_body (self, curgrp, lastrow);
     }
 }
 
@@ -667,9 +684,15 @@ draw_page (GtkPrintOperation *operation, GtkPrintContext *context,
 //    gtk_print_operation_set_unit (operation, GTK_UNIT_POINTS);
     self->cr = gtk_print_context_get_cairo_context (context);
     self->layout = gtk_print_context_create_pango_layout (context);
-    render_page (self, context);
+    render_page (self);
     g_object_unref (self->layout);
 }
+
+/* ************************************************************************ *
+ * begin_print() - Called after print settings have been set up.            *
+ *      Here we set up the default font, determine the height of a line.    *
+ *      We paginate the output by doing a "dry run" through the data        *
+ * ************************************************************************ */
 
 static void
 begin_print (GtkPrintOperation *operation, GtkPrintContext *context,
@@ -678,6 +701,7 @@ begin_print (GtkPrintOperation *operation, GtkPrintContext *context,
     PangoLayout *lo;
     PangoRectangle log_rect;
 
+    int firstrow = 0;   // First datarow for the page;
     self->datarow = 0;
     self->pageno = 0;
     self->context = context;
@@ -695,10 +719,13 @@ begin_print (GtkPrintOperation *operation, GtkPrintContext *context,
     self->textheight = log_rect.height/PANGO_SCALE;
     g_object_unref (lo);
 
+    self->PageEndRow = g_ptr_array_new();
+
     while (self->datarow < PQntuples (self->pgresult))
     {
         self->ypos = 0;
-        render_page (self, context);
+        render_page (self);
+        g_ptr_array_add (self->PageEndRow, (gpointer)self->datarow);
         ++self->TotPages;
     }
 
@@ -724,4 +751,7 @@ render_report (GLOBDAT *self)
 
     gtk_print_operation_run (po, GTK_PRINT_OPERATION_ACTION_PRINT,
             self->w_main, &g_err);
+
+    // Now free up everything that has been allocated...
+    g_ptr_array_free (self->PageEndRow, TRUE);
 }

@@ -131,8 +131,9 @@ typedef struct grp_info {
 
 // GLOBDAT: Data structure containing all data needed throughout all processes
 typedef struct data_struct {
-    int pageno;
-    int TotPages;
+    int pageno,
+        TotPages;
+    GPtrArray *PageEndRow;      // Last Data Row to print on current page.
     double pageheight;
     int datarow;
     double xpos;

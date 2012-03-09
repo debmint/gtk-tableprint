@@ -231,14 +231,6 @@ add_cell_attribs (CELLINF *cell, const gchar **attrib_names,
             {
                 cell->txtsource = TSRC_PAGEOF;
             }
-            else if (STRMATCH(val, "hline"))
-            {
-                cell->borderstyle = BDY_HLINE; 
-            }
-            else if (STRMATCH(val, "vbar"))
-            {
-                cell->borderstyle = BDY_VBAR;
-            }
             //TODO: add error reporting...
         }
 
@@ -406,15 +398,20 @@ allocate_new_group (const char **attrib_names, const char **attrib_vals,
                 newgrp->borderstyle = DBLBOX;
             }
         }
+        // We may wish to move this into the body allocation segment
         else if (STRMATCH(attrib_names[grpidx], "cellborder"))
         {
             if (STRMATCH(attrib_vals[grpidx], "hline"))
             {
-                newgrp->borderstyle |= BDY_HLINE;
+                newgrp->borderstyle = BDY_HLINE;
             }
-            if (STRMATCH(attrib_vals[grpidx], "vbar"))
+            else if (STRMATCH(attrib_vals[grpidx], "vbar"))
             {
-                newgrp->borderstyle |= BDY_VBAR;
+                newgrp->borderstyle = BDY_VBAR;
+            }
+            else if (STRMATCH(attrib_vals[grpidx], "boxed"))
+            {
+                newgrp->borderstyle = BDY_HLINE | BDY_VBAR;
             }
         }
 
