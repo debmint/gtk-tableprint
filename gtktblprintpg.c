@@ -47,6 +47,7 @@ static void end_element_main(GMarkupParseContext *, const gchar *,
 static void prs_err(GMarkupParseContext *, GError *, gpointer);
 
 GLOBDAT GlobalData;
+GSList *elList;
 
 char *GroupElements[] = {"pageheader", "group", "body", NULL};
 gboolean Formatted = FALSE;
@@ -56,8 +57,8 @@ PGRPINF FmtList;    // The formatting tree;
 static GError *error;
 GMarkupParser prsr = {start_element_main, end_element_main, NULL,
                         NULL, prs_err};
-GMarkupParser sub_prs = {start_element_main, end_element_main, NULL,
-                        NULL, prs_err};
+//GMarkupParser sub_prs = {start_element_main, end_element_main, NULL,
+//                        NULL, prs_err};
 
 /* **************************************************************** *
  * match_attrib() - Utility function to match a string constant.    *
@@ -455,11 +456,17 @@ static void start_element_main (GMarkupParseContext *context,
                                 const gchar  *element_name,
                                 const gchar **attrib_names,
                                 const gchar **attrib_vals,
-                                gpointer parent,
+                                gpointer oldParent,
                                 GError **error)
 {
-    gpointer newgrp;
+    gpointer newgrp = NULL;
     GRPINF *cur_grp;
+    GRPINF *parent = NULL;
+
+    if (elList)
+    {
+        parent = g_slist_nth(elList, 0)->data;
+    }
 
     if (STRMATCH(element_name, "cell"))
     {
@@ -627,7 +634,12 @@ static void start_element_main (GMarkupParseContext *context,
         //newgrp = GlobalData.DocHeader;
     }
 
-    g_markup_parse_context_push (context, &sub_prs, newgrp);
+    if (newgrp)
+    {
+        elList = g_slist_prepend(elList, newgrp);
+    }
+    // Trying to elimintate this feature
+    //g_markup_parse_context_push (context, &sub_prs, newgrp);
 }
 
 static void end_element_main (GMarkupParseContext *context,
@@ -637,7 +649,12 @@ static void end_element_main (GMarkupParseContext *context,
 {
 //    if (this_grp)      // If anywhere but in top-level parse
 //    {
-        gpointer ptr = g_markup_parse_context_pop (context);
+    // Pop this item off the List
+    if (elList)
+    {
+        elList = g_slist_delete_link(elList, g_slist_nth(elList, 0));
+    }
+        //gpointer ptr = g_markup_parse_context_pop (context);
 //    }
 //    if (STRMATCH(element_name, "group") || STRMATCH(element_name, "body")
 //            || STRMATCH(element_name, "defaultcell")
