@@ -7,7 +7,7 @@
 #include <pango/pango.h>
 #include <glib-object.h>
 #include <cairo.h>
-#include "gtktblprintpg.h"
+#include "tableprintoperationpriv.h"
 
 typedef struct page_def {
     int firstrow,

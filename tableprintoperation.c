@@ -1,5 +1,5 @@
 /* ************************************************************************ *
- * gtktblprintpg.c - Mainline module for GtkTblPrintPg library function     $
+ * tableprintoperation.c - Mainline module for TablePrint library function  $
  *                                                                          $
  * The setup of the control for the print output is contained in a          $
  * GHashTable structure.  This contains headers for each part of the        $
@@ -21,9 +21,17 @@
  * ************************************************************************ */
 
 #include <stdlib.h>
-#include "gtktblprintpg.h"
+#include "tableprintoperationpriv.h"
 
 #define CELLPAD_DFLT 10
+
+struct _TablePrintOperation
+{
+    GtkPrintOperation parent_instance;
+    //instance variables for subclass go here
+};
+
+G_DEFINE_TYPE(TablePrintOperation, table_print_operation, GTK_TYPE_PRINT_OPERATION)
 
 struct xml_udat {
     int depth;
@@ -59,6 +67,25 @@ GMarkupParser prsr = {start_element_main, end_element_main, NULL,
                         NULL, prs_err};
 //GMarkupParser sub_prs = {start_element_main, end_element_main, NULL,
 //                        NULL, prs_err};
+
+static void
+table_print_operation_init (TablePrintOperation *op)
+{
+    // initialisation goes hee
+}
+
+static void
+table_print_operation_class_init (TablePrintOperation *class)
+{
+    // virtual function overrides go here
+    // property and signal definitions go here
+}
+
+TablePrintOperation *
+table_print_operation_new (void)
+{
+    return g_object_new (TABLE_TYPE_PRINT_OPERATION, NULL);
+}
 
 /* **************************************************************** *
  * match_attrib() - Utility function to match a string constant.    *

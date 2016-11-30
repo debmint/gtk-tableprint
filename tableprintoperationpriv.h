@@ -1,62 +1,9 @@
 /* ************************************************************************ *
- * gtktblprintpg.h - Header file for GtkTblPrintPg library function         $
- * $Id::                                                                    $
+ * tblprintprivate.h - Private Header file for TblPrint library function    $
+ * $Id:: tblprint.h 40 2016-11-27 22:30:07Z dlb                             $
  * ************************************************************************ */
 
-#ifndef GTKPRINTTABLE_DEFINED
-#define GTKPRINTTABLE_DEFINED
-
-#ifdef _cplusplus
-extern "C"
-{       //}     // To make vim quit trying to indent...
-#endif
-
-#include <string.h>
-#include <gtk/gtk.h>
-#include <glib.h>
-#include <libpq-fe.h>
-
-#define DFLTFONT "Sans Serif"
-#define DFLTSIZE 10
-
-#ifndef STRMATCH
-#   define STRMATCH(a,b) (strcmp(a, b) == 0)
-#endif
-
-#ifndef STRNMATCH
-#define STRNMATCH(a,b,n) (strncmp(a,b,) == 0)
-#endif
-
-// enumerations for data source for text
-enum {
-    TSRC_STATIC = 1,    // Constant text
-    TSRC_DATA,          // Table column
-    TSRC_NOW,           // Current time
-    TSRC_PAGE,          // Cell prints "Page"
-    TSRC_PAGEOF,        // Cell prints "Page X of Y"
-    TSRC_PRINTF         // Printf-formatted data
-};
-
-enum {
-    GRPTY_GROUP = 101,
-    GRPTY_HEADER,
-    GRPTY_BODY,
-    GRPTY_PAGEHEADER,
-    GRPTY_DOCHD,
-    GRPTY_CELL,
-    GRPTY_FONT
-} GRPTY;
-
-// Group border bitmap
-
-#define SINGLEBAR     1
-#define SINGLEBAR_HVY 1 << 1
-#define DBLBAR        1 << 2
-#define SINGLEBOX     1 << 3
-#define DBLBOX        1 << 4
-
-#define BDY_HLINE 1 << 7
-#define BDY_VBAR  1 << 8
+#include "tableprintoperation.h"
 
 // A structure to determine the padding for a row, defined in
 // PrintContext units
@@ -71,7 +18,7 @@ typedef struct pg_mar {
 // PangoFontDescription.
 
 typedef struct font_inf {
-    int grptype;          // Group-type - Must be first entry in strucct
+    int grptype;          // Group-type - Must be first entry in struct
     char *family;
     int   size;         // Font-size in POINTS
     PangoStyle  style;
@@ -131,34 +78,25 @@ typedef struct grp_info {
 
 // GLOBDAT: Data structure containing all data needed throughout all processes
 typedef struct data_struct {
-    int pageno,
-        TotPages;
+    int pageno,             /* Current Page #   */
+        TotPages;           /* Total Pages      */
     GPtrArray *PageEndRow;      // Last Data Row to print on current page.
     double pageheight;
-    int datarow;
-    double xpos;
-    double ypos;
+    int datarow;            /* Current row in the Data Array    */
+    double xpos;        /* Current Horizontal position on page  */
+    double ypos;        /* Current Vertical Position on page    */
     double textheight;
-    gboolean DoPrint;
+    gboolean DoPrint;   /* Flag that we want to actually print (pass 2) */
     int CellHeight;
-    cairo_t *cr;
+    cairo_t *cr;        /* The Cairo Print Context */
     GtkWindow *w_main;
     GtkPageSetup *Page_Setup;
     GtkPrintContext *context;
     PangoLayout *layout;
     ROWPAD *DefaultPadding;
-    GRPINF *DocHeader;
-    GRPINF *PageHeader;
+    GRPINF *DocHeader;  /* The Document Header (header for first page)  */
+    GRPINF *PageHeader; /* The Pagheader (header for each page)         */
     GRPINF *grpHd;
-    PGresult *pgresult;
+    PGresult *pgresult; /* Pointer to the PostGreSQL pgresult           */
 } GLOBDAT;
 
-void *tblprint_from_xmlfile (GtkWindow *, PGresult *, char *);
-void *tblprint_from_xmlstring (GtkWindow *, PGresult *, char *);
-
-//typedef struct tbl_data {
-//} TBLDATA, *PTBLDATA;
-#ifdef _cplusplus
-}
-#endif
-#endif      //ifndef GTKPRINTTABLE_DEFINED
