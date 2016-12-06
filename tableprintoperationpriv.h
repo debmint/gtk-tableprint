@@ -76,27 +76,15 @@ typedef struct grp_info {
     ROWPAD     margins;
 } CELLPROPS, *PCELLPROPS;*/
 
-// GLOBDAT: Data structure containing all data needed throughout all processes
-typedef struct data_struct {
-    int pageno,             /* Current Page #   */
-        TotPages;           /* Total Pages      */
-    GPtrArray *PageEndRow;      // Last Data Row to print on current page.
-    double pageheight;
-    int datarow;            /* Current row in the Data Array    */
-    double xpos;        /* Current Horizontal position on page  */
-    double ypos;        /* Current Vertical Position on page    */
-    double textheight;
-    gboolean DoPrint;   /* Flag that we want to actually print (pass 2) */
-    int CellHeight;
-    cairo_t *cr;        /* The Cairo Print Context */
-    GtkWindow *w_main;
-    GtkPageSetup *Page_Setup;
-    GtkPrintContext *context;
-    PangoLayout *layout;
-    ROWPAD *DefaultPadding;
-    GRPINF *DocHeader;  /* The Document Header (header for first page)  */
-    GRPINF *PageHeader; /* The Pagheader (header for each page)         */
-    GRPINF *grpHd;
-    PGresult *pgresult; /* Pointer to the PostGreSQL pgresult           */
-} GLOBDAT;
+
+typedef struct page_def {
+    int firstrow,
+        lastrow;
+} PG_DEF;
+
+struct xml_udat {
+    int depth;
+    PGRPINF parent;
+    PGRPINF curfmt;
+} XMLData;
 

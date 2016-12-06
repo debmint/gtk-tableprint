@@ -2,9 +2,10 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(gtktblprintpg,0.1)
-AC_CONFIG_SRCDIR([gtktblprintpg.c])
+AC_INIT(tableprintoperation,0.1)
+AC_CONFIG_SRCDIR([tableprintoperation.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
