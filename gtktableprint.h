@@ -1,12 +1,10 @@
 /* ************************************************************************ *
  * tblprint.h - Header file for GtkTblPrintPg library function              $
- * $Id::                                                                    $
+ * $Id::                                                              $
  * ************************************************************************ */
 
-#ifndef __TABLE_PRINT_OPERATION_H
-#define __TABLE_PRINT_OPERATION_H
-
-G_BEGIN_DECLS
+#ifndef __GTK_TABLE_PRINT_H
+#define __GTK_TABLE_PRINT_H
 
 #ifdef _cplusplus
 extern "C"
@@ -15,25 +13,25 @@ extern "C"
 
 //#include <string.h>
 #include <gtk/gtk.h>
-//#include <glib-object.h>
+#include <glib-object.h>
 //#include <glib.h>
 #include <libpq-fe.h>
 
-#define GTK_TYPE_PRINT_OPERATION_TABLE (gtk_print_operation_table_get_type())
-//#define TABLE_TYPE_PRINT_OPERATION  (table_print_operation_get_type())
+G_BEGIN_DECLS
 
-//#define TABLE_PRINT_OPERATION(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TABLE_TYPE_PRINT_OPERATION, TablePrintOperation))
+#define GTK_TYPE_TABLE_PRINT (gtk_table_print_get_type())
+
+//#define GTK_TABLE_PRINT(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TABLE_TYPE_PRINT_OPERATION, TablePrintOperation))
 
 //#define TABLE_IS_PRINT_OPERATION(o) (G_TYPE_CHECK_INSTANCE_TYPE((o), TABLE_TYPE_PRINT_OPERATION))
 
-G_DECLARE_FINAL_TYPE(GtkPrintOperationTable,gtk_print_operation_table, GTK, PRINT_OPERATION_TABLE, GtkPrintOperation)
-//G_DECLARE_FINAL_TYPE(TablePrintOperation, table_print_operation, TABLE, PRINT_OPERATION, GtkPrintOperation)
+G_DECLARE_FINAL_TYPE(GtkTablePrint,gtk_table_print, GTK, TABLE_PRINT, GtkPrintOperation)
 
 //typedef struct _TablePrintOperationClass TablePrintOperationClass;
-//typedef struct _GtkPrintOperationTable GtkPrintOperationTable
+//typedef struct _GtkGtkTablePrint GtkGtkTablePrint
 //typedef struct _TablePrintOperation TablePrintOperation;
 
-struct _GtkPrintOperationTableClass
+struct _GtkTablePrintClass
 {
     GtkPrintOperationClass parent_class;
 };
@@ -50,8 +48,7 @@ struct _GtkPrintOperationTableClass
 #endif
 
 /**
- * Enumerations for data source for text
- *
+ * DataSources:
  * @TSRC_STATIC: Constant text
  * @TSRC_DATA:   Table column
  * @TSRC_NOW:    Current time
@@ -68,11 +65,10 @@ enum {
     TSRC_PAGE,          // Cell prints "Page"
     TSRC_PAGEOF,        // Cell prints "Page X of Y"
     TSRC_PRINTF         // Printf-formatted data
-};
+} DataSources;
 
 /**
- * Definitions for Block type
- *
+ * GRPTY:
  * @GRPTY_GROUP:    Group
  * @GRPTY_HEADER:   Header
  * @GRPTY_BODY:     Body text (data for main body)
@@ -95,29 +91,42 @@ enum {
 
 // Group border bitmap
 /**
- * Border Styles
- * @SINGLEBAR:     Single bar (thin)
- * @SINGLEBAR_HVY: Single bar (wide)
- * @DBLBAR:        Double line bar
+ * BorderStyles:
+ * @SINGLEBAR:      Single bar (thin)
+ * @SINGLEBAR_HVY:  Single bar (wide)
+ * @DBLBAR:         Double line bar
  * @SINGLEBOX:      Box around group with single line
  * @DBLBOX:         Box around group with double lines
  *
  */
 
-#define SINGLEBAR     1
-#define SINGLEBAR_HVY 1 << 1
-#define DBLBAR        1 << 2
-#define SINGLEBOX     1 << 3
-#define DBLBOX        1 << 4
+enum
+{
+    SINGLEBAR     = 1,
+    SINGLEBAR_HVY = 1 << 1,
+    DBLBAR        = 1 << 2,
+    SINGLEBOX     = 1 << 3,
+    DBLBOX        = 1 << 4
+} BorderStyles;
 
-#define BDY_HLINE 1 << 7
-#define BDY_VBAR  1 << 8
+/**
+ * BodyLines:
+ * BDY_HLINE: Horizontal line
+ * BDY_VBAR:  Vertical bar
+ *
+ */
 
-GtkPrintOperationTable *gtk_print_operation_table_new(void);
-void *gtk_print_operation_table_from_xmlfile (GtkPrintOperationTable *,
-                GtkWindow *, PGresult *, char *);
-void *gtk_print_operation_table_from_xmlstring (GtkPrintOperationTable *,
-                GtkWindow *, PGresult *, char *);
+enum
+{
+    BDY_HLINE = 1 << 7,
+    BDY_VBAR  = 1 << 8
+} BodyLines;
+
+GtkTablePrint *gtk_table_print_new(void);
+void *gtk_table_print_from_xmlfile (GtkTablePrint *tblprnt,
+                GtkWindow *win, PGresult *res, char *filename);
+void *gtk_table_print_from_xmlstring (GtkTablePrint *tp,
+                GtkWindow *w, PGresult *p, char *c);
 
 //typedef struct tbl_data {
 //} TBLDATA, *PTBLDATA;
@@ -127,4 +136,4 @@ void *gtk_print_operation_table_from_xmlstring (GtkPrintOperationTable *,
 
 G_END_DECLS
 
-#endif      //ifndef __TABLE_PRINT_OPERATION_H
+#endif      //ifndef __GTK_TABLE_PRINT_H

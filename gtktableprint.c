@@ -1,5 +1,5 @@
 /* ************************************************************************ *
- * tableprintoperation.c - Mainline module for TablePrint library function  $
+ * gtktableprint.c - Mainline module for TablePrint library function        $
  *                                                                          $
  * The setup of the control for the print output is contained in a          $
  * GHashTable structure.  This contains headers for each part of the        $
@@ -25,26 +25,26 @@
 #include <pango/pango.h>
 #include <glib-object.h>
 #include <cairo.h>
-#include "tableprintoperationpriv.h"
+#include "gtktableprintpriv.h"
 
 /**
- * SECTION:gtkprintoperationtable
- * @Title: GtkPrintOperationTable
- * @Short_description: Print tabular data from PostGres, using GtkPrintOperation
+ * SECTION:gtktableprint
+ * @Title: GtkTablePrint
+ * @Short_description: Print tabular data from PostGres, using #GtkPrintOperation
  * @See_also: #GtkPrintOperation, #libpq (in PostGreSQL documentation)
  *
- * GtkPrintOperationTable is a subclass of GtkPrintOperation.  It formats data
- * obtained from a PQresult, obtained from a query sent to a PostGreSQL
- * database into columns and rows.  The data can be grouped and sub-grouped,
- * if need be.  The formatting of the printout is defined by an XML document,
- * either obtained from a file, or an embedded string.
+ * GtkTablePrint a subclass of GtkPrintOperation.  It formats dataobtained
+ * from a PQresult, obtained from a query sent to a PostGreSQL database into
+ * columns and rows.  The data can be grouped and sub-grouped, if need be.
+ * The formatting of the printout is defined by an XML document, either
+ * obtained from a file, or an embedded string.
  *
- * To print a document, you first create a GtkPrintOperationTable object with
- * gtk_print_operation_tagle_new().  You then begin printing by calling the
- * function gtk_print_operation_from_xmlstring() or
- * gtk_print_operation_from_xmlfile.  Parameters to pass to the the function
- * are: the GtkPrintOperationTable object, a window (normally the main window)
- * which is to be the parent window of any warning dialogs, etc.  This window
+ * To print a document, you first create a #GtkTablePrint object with
+ * gtk_table_print_new().  You then begin printing by calling the
+ * function gtk_table_print_from_xmlstring() or gtk_table_print_from_xmlfile()
+ * Parameters to pass to the the function which are:
+ * the #GtkTablePrint object, a window (normally the main window)
+ * is to be the parent window of any warning dialogs, etc.  This window
  * can be passed as a NULL value, in which case error messages are the sent
  * to STDERR.  Additional parameters are the PGresult of the database query,
  * and a string which represents either the pointer to the string or the name
@@ -55,25 +55,25 @@
  */
 
 //GtkPrintOperation *po;
-static void render_report (GtkPrintOperationTable*);
+static void render_report (GtkTablePrint*);
 static void start_element_main(GMarkupParseContext *, const gchar *,
         const gchar **, const gchar **, gpointer, GError **);
 static void end_element_main(GMarkupParseContext *, const gchar *,
         gpointer, GError **);
 static void prs_err(GMarkupParseContext *, GError *, gpointer);
 
-static void report_error (GtkPrintOperationTable *, char *);
-static void render_page(GtkPrintOperationTable *);
-static void gtk_print_operation_table_begin_print (GtkPrintOperation *,
+static void report_error (GtkTablePrint *, char *);
+static void render_page(GtkTablePrint *);
+static void gtk_table_print_begin_print (GtkPrintOperation *,
         GtkPrintContext *);
-static void gtk_print_operation_table_draw_page (GtkPrintOperation *,
+static void gtk_table_print_draw_page (GtkPrintOperation *,
                                 GtkPrintContext *, int);
-static void gtk_print_operation_table_draw_page (GtkPrintOperation *,
+static void gtk_table_print_draw_page (GtkPrintOperation *,
                                 GtkPrintContext *, int);
 
 #define CELLPAD_DFLT 10
 
-struct _GtkPrintOperationTable
+struct _GtkTablePrint
 {
     GtkPrintOperation parent_instance;
 
@@ -101,8 +101,7 @@ struct _GtkPrintOperationTable
     GSList *elList;
 };
 
-G_DEFINE_TYPE(GtkPrintOperationTable, gtk_print_operation_table,
-                GTK_TYPE_PRINT_OPERATION)
+G_DEFINE_TYPE(GtkTablePrint, gtk_table_print, GTK_TYPE_PRINT_OPERATION)
 
 /* ************************************************************************ *
  
@@ -130,7 +129,7 @@ GMarkupParser prsr = {start_element_main, end_element_main, NULL,
 //                        NULL, prs_err};
 
 static void
-gtk_print_operation_table_init (GtkPrintOperationTable *op)
+gtk_table_print_init (GtkTablePrint *op)
 {
     // initialisation goes here
     ///g_signal_connect (po, "begin-print", G_CALLBACK(begin_print), self);
@@ -140,32 +139,31 @@ gtk_print_operation_table_init (GtkPrintOperationTable *op)
 }
 
 static void
-gtk_print_operation_table_class_init (GtkPrintOperationTableClass *class)
+gtk_table_print_class_init (GtkTablePrintClass *class)
 {
     // virtual function overrides go here
     //GObjectClass *gobject_class = (GObjectClass *) class;
     GtkPrintOperationClass *print_class = (GtkPrintOperationClass *) class;
-    //gobject_class->finalize = gtk_print_operation_table_finalize;
-    print_class->begin_print = gtk_print_operation_table_begin_print;
-    print_class->draw_page = gtk_print_operation_table_draw_page;
-    //print_class->end_print = gtk_print_operation_table_end_print;
+    //gobject_class->finalize = gtk_table_print_finalize;
+    print_class->begin_print = gtk_table_print_begin_print;
+    print_class->draw_page = gtk_table_print_draw_page;
+    //print_class->end_print = gtk_table_print_end_print;
     // property and signal definitions go here
 }
 
 /**
- * gtk_print_operation_table_new:
+ * gtk_table_print_new:
  *
- * Creates a new #GtkPrintOperationTable.
+ * Creates a new #GtkTablePrint.
  *
- * Returns: a new #GtkPrintOperationTable
+ * Returns: A new #GtkTablePrint
  *
  */
 
-GtkPrintOperationTable *
-gtk_print_operation_table_new (void)
+GtkTablePrint *
+gtk_table_print_new (void)
 {
-    return g_object_new (GTK_TYPE_PRINT_OPERATION_TABLE,NULL); 
-    //return g_object_new (TABLE_TYPE_PRINT_OPERATION, NULL);
+    return g_object_new (GTK_TYPE_TABLE_PRINT,NULL); 
 }
 
 /* **************************************************************** *
@@ -266,7 +264,7 @@ name_to_layout_align (const char *name)
 }
 
 static void
-report_error (GtkPrintOperationTable *self, char *message)
+report_error (GtkTablePrint *self, char *message)
 {
     if (self->w_main)
     {
@@ -365,7 +363,7 @@ add_cell_attribs (CELLINF *cell, const gchar **attrib_names,
  * **************************************************************** */
 
 static CELLINF *
-append_cell_def (GtkPrintOperationTable *self, const gchar **attrib_names,
+append_cell_def (GtkTablePrint *self, const gchar **attrib_names,
                     const gchar **attrib_vals, GRPINF *parentgrp)
 {
     CELLINF *mycell;
@@ -391,6 +389,25 @@ append_cell_def (GtkPrintOperationTable *self, const gchar **attrib_names,
         if (mycell->celltext && strlen(mycell->celltext))
         {
             mycell->cell_col = PQfnumber (self->pgresult, mycell->celltext);
+
+            if (mycell->cell_col == -1)
+            {
+                if (self->w_main)
+                {
+                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
+                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+                            "Error! '%s' is not a valid column name",
+                            mycell->celltext);
+                    gtk_dialog_run(GTK_DIALOG(dlg));
+                    gtk_widget_destroy(dlg);
+                }
+                else
+                {
+                    fprintf (stderr,"Error: '%s' is not a valid column\n",
+                            mycell->celltext);
+                }
+            }
 
             if (PQresultStatus (self->pgresult) != PGRES_TUPLES_OK)
             {
@@ -431,7 +448,7 @@ append_cell_def (GtkPrintOperationTable *self, const gchar **attrib_names,
 
 
 static GRPINF *
-allocate_new_group (GtkPrintOperationTable *self, const char **attrib_names,
+allocate_new_group (GtkTablePrint *self, const char **attrib_names,
                     const char **attrib_vals, GRPINF *parent, int grptype)
 {
     int grpidx = 0;
@@ -474,6 +491,25 @@ allocate_new_group (GtkPrintOperationTable *self, const char **attrib_names,
         {
             newgrp->grpcol = PQfnumber (self->pgresult,
                                             attrib_vals[grpidx]);
+
+            if (newgrp->grpcol == -1)
+            {
+                if (self->w_main)
+                {
+                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
+                            GTK_DIALOG_DESTROY_WITH_PARENT,
+                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+                            "Error! '%s' is not a valid column name",
+                            attrib_vals[grpidx]);
+                    gtk_dialog_run(GTK_DIALOG(dlg));
+                    gtk_widget_destroy(dlg);
+                }
+                else
+                {
+                    fprintf (stderr, "Error: '%s' is not a valid column\n",
+                            attrib_vals[grpidx]);
+                }
+            }
         }
         else if (STRMATCH(attrib_names[grpidx], "pointsabove"))
         {
@@ -559,15 +595,6 @@ set_padding_attribs (ROWPAD *pad,
     return pad;
 }
 
-/**
- * SECTION: xml format
- * @Title:Format for XML definition
- * |[<!-- language="xml" -->
- * <config>
- * </config>
- * ]|
- */
-
 static void
 start_element_main (GMarkupParseContext *context,
                     const gchar  *element_name,
@@ -580,9 +607,9 @@ start_element_main (GMarkupParseContext *context,
     GRPINF *cur_grp;
     GRPINF *parent = NULL;
 
-    if (GTK_PRINT_OPERATION_TABLE(self)->elList)
+    if (GTK_TABLE_PRINT(self)->elList)
     {
-        parent = g_slist_nth(GTK_PRINT_OPERATION_TABLE(self)->elList, 0)->data;
+        parent = g_slist_nth(GTK_TABLE_PRINT(self)->elList, 0)->data;
     }
 
     if (STRMATCH(element_name, "cell"))
@@ -590,7 +617,7 @@ start_element_main (GMarkupParseContext *context,
         if (parent)
         {
             newgrp =
-                append_cell_def (GTK_PRINT_OPERATION_TABLE(self),
+                append_cell_def (GTK_TABLE_PRINT(self),
                         attrib_names, attrib_vals, (GRPINF *)parent);
         }
         else
@@ -610,7 +637,7 @@ start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "group"))
     {
-        newgrp = allocate_new_group ( GTK_PRINT_OPERATION_TABLE(self),
+        newgrp = allocate_new_group ( GTK_TABLE_PRINT(self),
                 attrib_names, attrib_vals, (GRPINF *)parent, GRPTY_GROUP);
         if (parent)
         {
@@ -618,21 +645,21 @@ start_element_main (GMarkupParseContext *context,
         }
         else
         {
-             GTK_PRINT_OPERATION_TABLE(self)->grpHd = (GRPINF *)newgrp;
+             GTK_TABLE_PRINT(self)->grpHd = (GRPINF *)newgrp;
         }
     }
     else if (STRMATCH(element_name, "header"))
     {
         if (parent)
         {
-            newgrp = allocate_new_group (GTK_PRINT_OPERATION_TABLE(self),
+            newgrp = allocate_new_group (GTK_TABLE_PRINT(self),
                         attrib_names, attrib_vals, NULL, GRPTY_HEADER);
             ((GRPINF *)parent)->header = newgrp;
         }
     }
     else if (STRMATCH(element_name, "body"))
     {
-        newgrp = allocate_new_group ( GTK_PRINT_OPERATION_TABLE(self),
+        newgrp = allocate_new_group ( GTK_TABLE_PRINT(self),
                 attrib_names, attrib_vals, (GRPINF *)parent, GRPTY_BODY);
         if (parent)
         {
@@ -640,7 +667,7 @@ start_element_main (GMarkupParseContext *context,
         }
         else
         {
-             GTK_PRINT_OPERATION_TABLE(self)->grpHd = (GRPINF *)newgrp;
+             GTK_TABLE_PRINT(self)->grpHd = (GRPINF *)newgrp;
         }
     }
     else if (STRMATCH(element_name, "font"))
@@ -705,14 +732,14 @@ start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "pageheader"))
     {
-        if (! GTK_PRINT_OPERATION_TABLE(self)->PageHeader)
+        if (! GTK_TABLE_PRINT(self)->PageHeader)
         {
-             GTK_PRINT_OPERATION_TABLE(self)->PageHeader =
-                    allocate_new_group ( GTK_PRINT_OPERATION_TABLE(self),
+             GTK_TABLE_PRINT(self)->PageHeader =
+                    allocate_new_group ( GTK_TABLE_PRINT(self),
                             attrib_names, attrib_vals, NULL, GRPTY_PAGEHEADER);
         }
 
-        newgrp =  GTK_PRINT_OPERATION_TABLE(self)->PageHeader;
+        newgrp =  GTK_TABLE_PRINT(self)->PageHeader;
     }
     else if (STRMATCH(element_name, "padding"))
     {
@@ -738,17 +765,17 @@ start_element_main (GMarkupParseContext *context,
     {
         // TODO: if parent, error???
 
-        if (! GTK_PRINT_OPERATION_TABLE(self)->DefaultPadding)
+        if (! GTK_TABLE_PRINT(self)->DefaultPadding)
         {
-            GTK_PRINT_OPERATION_TABLE(self)->DefaultPadding =
+            GTK_TABLE_PRINT(self)->DefaultPadding =
                             calloc (1, sizeof(ROWPAD));
         }
 
-        GTK_PRINT_OPERATION_TABLE(self)->DefaultPadding =
+        GTK_TABLE_PRINT(self)->DefaultPadding =
             set_padding_attribs (
-                    GTK_PRINT_OPERATION_TABLE(self)->DefaultPadding,
+                    GTK_TABLE_PRINT(self)->DefaultPadding,
                                                 attrib_names, attrib_vals);
-        newgrp = GTK_PRINT_OPERATION_TABLE(self)->DefaultPadding;
+        newgrp = GTK_TABLE_PRINT(self)->DefaultPadding;
     }
     else //if (STRMATCH(element_name, "docheader"))
     {
@@ -757,8 +784,8 @@ start_element_main (GMarkupParseContext *context,
 
     if (newgrp)
     {
-        GTK_PRINT_OPERATION_TABLE(self)->elList =
-            g_slist_prepend(GTK_PRINT_OPERATION_TABLE(self)->elList, newgrp);
+        GTK_TABLE_PRINT(self)->elList =
+            g_slist_prepend(GTK_TABLE_PRINT(self)->elList, newgrp);
     }
     // Trying to elimintate this feature
     //g_markup_parse_context_push (context, &sub_prs, newgrp);
@@ -773,11 +800,11 @@ end_element_main (GMarkupParseContext *context,
 //    if (this_grp)      // If anywhere but in top-level parse
 //    {
     // Pop this item off the List
-    if (GTK_PRINT_OPERATION_TABLE(self)->elList)
+    if (GTK_TABLE_PRINT(self)->elList)
     {
-        GTK_PRINT_OPERATION_TABLE(self)->elList =
-            g_slist_delete_link(GTK_PRINT_OPERATION_TABLE(self)->elList,
-                    g_slist_nth(GTK_PRINT_OPERATION_TABLE(self)->elList, 0));
+        GTK_TABLE_PRINT(self)->elList =
+            g_slist_delete_link(GTK_TABLE_PRINT(self)->elList,
+                    g_slist_nth(GTK_TABLE_PRINT(self)->elList, 0));
     }
         //gpointer ptr = g_markup_parse_context_pop (context);
 //    }
@@ -832,7 +859,7 @@ end_element_main (GMarkupParseContext *context,
 
 // Set up default PrintSettings
 static void
-set_page_defaults (GtkPrintOperationTable *self)
+set_page_defaults (GtkTablePrint *self)
 {
     GtkPaperSize *pap_siz;
 
@@ -938,19 +965,18 @@ reset_default_cell ()
 }
 
 /**
- * gtk_print_operation_table_from_xmlfile:
- * @op: The #GtkPrintOpeationTable
- * @wmain: The parent window
- * @res: The #PGresult that contains the data to print
- * @fname: The filename to open and read to get the xml definition
- * for the printout.
+ * gtk_table_print_from_xmlfile:
+ * @tblprnt: The #GtkTablePrint
+ * @win: The parent window
+ * @res: The PGresult that contains the data to print
+ * @filename: The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is
  * contained in a file.
  */
 
 void *
-gtk_print_operation_table_from_xmlfile (GtkPrintOperationTable *tbl,
+gtk_table_print_from_xmlfile (GtkTablePrint *tbl,
                                         GtkWindow *wmain,
                                         PGresult *res,
                                         char *fname)
@@ -987,17 +1013,15 @@ gtk_print_operation_table_from_xmlfile (GtkPrintOperationTable *tbl,
     reset_default_cell ();
     render_report (tbl);
     //free_default_cell();
-    return GTK_PRINT_OPERATION_TABLE(tbl)->grpHd; // Temporary - for debugging
+    return GTK_TABLE_PRINT(tbl)->grpHd; // Temporary - for debugging
 }
 
 /**
- * gtk_print_operation_table_from_xmlstring:
- *
- * @op: The #GtkPrintOpeationTable
- * @wmain: The parent window
- * @res: The #PGresult containing data to print
- * @xml: Pointer to the string containing the xml data which defines the
- * printout format
+ * gtk_table_print_from_xmlstring:
+ * @tp: The #GtkTablePrint
+ * @w: The parent window
+ * @p: The PGresult that contains the data to print
+ * @c: The filename to open and read to get the xml definition for the printout.
  *
  * Print a table where the definition for the format is contained in an
  * xml string.
@@ -1005,7 +1029,7 @@ gtk_print_operation_table_from_xmlfile (GtkPrintOperationTable *tbl,
  */
 
 void *
-gtk_print_operation_table_from_xmlstring (  GtkPrintOperationTable *tbl,
+gtk_table_print_from_xmlstring (  GtkTablePrint *tbl,
                                             GtkWindow *wmain,
                                             PGresult *res,
                                             char *xml)
@@ -1053,7 +1077,7 @@ gtk_print_operation_table_from_xmlstring (  GtkPrintOperationTable *tbl,
  * ******************************************************************** */
 
 static void
-set_col_values (CELLINF *cell, GtkPrintOperationTable *self)
+set_col_values (CELLINF *cell, GtkTablePrint *self)
 {
     // The following is for debugging purposes
 /*    double ps = gtk_page_setup_get_page_width(self->Page_Setup, GTK_UNIT_POINTS);
@@ -1076,7 +1100,7 @@ set_col_values (CELLINF *cell, GtkPrintOperationTable *self)
  * ******************************************************************** */
 
 static void
-set_cell_font_description (GtkPrintOperationTable * self, CELLINF *cell)
+set_cell_font_description (GtkTablePrint * self, CELLINF *cell)
 {
     PFONTINF fi;
 
@@ -1137,7 +1161,7 @@ set_cell_font_description (GtkPrintOperationTable * self, CELLINF *cell)
  * ******************************************************************** */
 
 static int
-render_cell (GtkPrintOperationTable *self, CELLINF *cell, int rownum,
+render_cell (GtkTablePrint *self, CELLINF *cell, int rownum,
         double rowtop)
 {
     char *celltext = NULL;
@@ -1214,7 +1238,7 @@ render_cell (GtkPrintOperationTable *self, CELLINF *cell, int rownum,
  * ******************************************************************** */
 
 double
-hline (GtkPrintOperationTable *self, double ypos, double weight)
+hline (GtkTablePrint *self, double ypos, double weight)
 {
     if (self->DoPrint)
     {
@@ -1235,7 +1259,7 @@ hline (GtkPrintOperationTable *self, double ypos, double weight)
  * **************************************************************** */
 
 //static double
-//group_hline_top (GtkPrintOperationTable *self, double rowtop, int borderstyle)
+//group_hline_top (GtkTablePrint *self, double rowtop, int borderstyle)
 //{
 //    double linerow = rowtop;
 //
@@ -1262,7 +1286,7 @@ hline (GtkPrintOperationTable *self, double ypos, double weight)
  * **************************************************************** */
 
 //static double
-//group_hline_bottom (GtkPrintOperationTable *self, double begintop, int borderstyle)
+//group_hline_bottom (GtkTablePrint *self, double begintop, int borderstyle)
 //{
 //    double rowtop = begintop;
 //
@@ -1289,7 +1313,7 @@ hline (GtkPrintOperationTable *self, double ypos, double weight)
  * ******************************************************************** */
 
 static int
-render_row (GtkPrintOperationTable *self,
+render_row (GtkTablePrint *self,
             GPtrArray *coldefs,
             ROWPAD *padding,
             int borderstyle,
@@ -1382,7 +1406,7 @@ render_row (GtkPrintOperationTable *self,
  * ******************************************************************** */
 
 static int
-render_row_grp (GtkPrintOperationTable *self,       // Global Data storage
+render_row_grp (GtkTablePrint *self,       // Global Data storage
         GPtrArray *col_defs,         // The coldefs array
         ROWPAD *padding,
         int borderstyle,
@@ -1431,7 +1455,7 @@ render_row_grp (GtkPrintOperationTable *self,       // Global Data storage
 }
 
 static void
-render_header (GtkPrintOperationTable *self, GRPINF *curhdr)
+render_header (GtkTablePrint *self, GRPINF *curhdr)
 {
     if (curhdr->pointsabove)
     {
@@ -1473,7 +1497,7 @@ render_header (GtkPrintOperationTable *self, GRPINF *curhdr)
  * ******************************************************************** */
 
 static void
-render_body (GtkPrintOperationTable *self,
+render_body (GtkTablePrint *self,
                 GRPINF *bdy,
                 int maxrow)
 {
@@ -1508,7 +1532,7 @@ render_body (GtkPrintOperationTable *self,
  * ******************************************************************** */
 
 static int
-render_group(GtkPrintOperationTable *self,
+render_group(GtkTablePrint *self,
                 GRPINF *curgrp,
                 int maxrow)
 {
@@ -1631,7 +1655,7 @@ render_group(GtkPrintOperationTable *self,
 }
 
 static void
-render_page(GtkPrintOperationTable *self)
+render_page(GtkTablePrint *self)
 {
     GRPINF *curgrp;
     int lastrow;
@@ -1687,20 +1711,20 @@ render_page(GtkPrintOperationTable *self)
 }
 
 static void
-gtk_print_operation_table_draw_page (GtkPrintOperation *operation,
+gtk_table_print_draw_page (GtkPrintOperation *operation,
                                 GtkPrintContext *context, int page_nr)
 {
-    GTK_PRINT_OPERATION_TABLE(operation)->pageno = page_nr;
-    GTK_PRINT_OPERATION_TABLE(operation)->context = context;
-    GTK_PRINT_OPERATION_TABLE(operation)->pageheight =
-                    gtk_print_context_get_height (GTK_PRINT_OPERATION_TABLE(operation)->context);
-//    gtk_print_GTK_PRINT_OPERATION_TABLE(operation)_set_unit (operation, GTK_UNIT_POINTS);
-    GTK_PRINT_OPERATION_TABLE(operation)->cr =
+    GTK_TABLE_PRINT(operation)->pageno = page_nr;
+    GTK_TABLE_PRINT(operation)->context = context;
+    GTK_TABLE_PRINT(operation)->pageheight =
+                    gtk_print_context_get_height (GTK_TABLE_PRINT(operation)->context);
+//    gtk_print_GTK_TABLE_PRINT(operation)_set_unit (operation, GTK_UNIT_POINTS);
+    GTK_TABLE_PRINT(operation)->cr =
                     gtk_print_context_get_cairo_context (context);
-    GTK_PRINT_OPERATION_TABLE(operation)->layout =
+    GTK_TABLE_PRINT(operation)->layout =
                     gtk_print_context_create_pango_layout (context);
-    render_page (GTK_PRINT_OPERATION_TABLE(operation));
-    g_object_unref (GTK_PRINT_OPERATION_TABLE(operation)->layout);
+    render_page (GTK_TABLE_PRINT(operation));
+    g_object_unref (GTK_TABLE_PRINT(operation)->layout);
 }
 
 /* ************************************************************************ *
@@ -1710,63 +1734,63 @@ gtk_print_operation_table_draw_page (GtkPrintOperation *operation,
  * ************************************************************************ */
 
 static void
-gtk_print_operation_table_begin_print (GtkPrintOperation *self,
+gtk_table_print_begin_print (GtkPrintOperation *self,
         GtkPrintContext *context)
 {
     PangoLayout *lo;
     PangoRectangle log_rect;
 
     //int firstrow = 0;   // First datarow for the page;
-    GTK_PRINT_OPERATION_TABLE(self)->datarow = 0;
-    GTK_PRINT_OPERATION_TABLE(self)->pageno = 0;
-    GTK_PRINT_OPERATION_TABLE(self)->context = context;
-    GTK_PRINT_OPERATION_TABLE(self)->pageheight =
-                gtk_print_context_get_height (GTK_PRINT_OPERATION_TABLE(self)->context);
-    GTK_PRINT_OPERATION_TABLE(self)->TotPages = 0;
-    GTK_PRINT_OPERATION_TABLE(self)->DoPrint = FALSE;
+    GTK_TABLE_PRINT(self)->datarow = 0;
+    GTK_TABLE_PRINT(self)->pageno = 0;
+    GTK_TABLE_PRINT(self)->context = context;
+    GTK_TABLE_PRINT(self)->pageheight =
+                gtk_print_context_get_height (GTK_TABLE_PRINT(self)->context);
+    GTK_TABLE_PRINT(self)->TotPages = 0;
+    GTK_TABLE_PRINT(self)->DoPrint = FALSE;
 //    gtk_print_operation_set_unit (operation, GTK_UNIT_POINTS);
-    GTK_PRINT_OPERATION_TABLE(self)->layout = gtk_print_context_create_pango_layout (context);
+    GTK_TABLE_PRINT(self)->layout = gtk_print_context_create_pango_layout (context);
 
-    lo = pango_layout_copy (GTK_PRINT_OPERATION_TABLE(self)->layout);
+    lo = pango_layout_copy (GTK_TABLE_PRINT(self)->layout);
     pango_layout_set_font_description (lo, defaultcell->pangofont);
-    pango_layout_set_width (lo, gtk_print_context_get_width (GTK_PRINT_OPERATION_TABLE(self)->context));
+    pango_layout_set_width (lo, gtk_print_context_get_width (GTK_TABLE_PRINT(self)->context));
     pango_layout_set_text (lo, "Ty", -1);
     pango_layout_get_extents (lo, NULL, &log_rect);
-    GTK_PRINT_OPERATION_TABLE(self)->textheight = log_rect.height/PANGO_SCALE;
+    GTK_TABLE_PRINT(self)->textheight = log_rect.height/PANGO_SCALE;
     g_object_unref (lo);
 
-    GTK_PRINT_OPERATION_TABLE(self)->PageEndRow = g_ptr_array_new();
+    GTK_TABLE_PRINT(self)->PageEndRow = g_ptr_array_new();
 
-    while ((GTK_PRINT_OPERATION_TABLE(self)->datarow) <
-            PQntuples (GTK_PRINT_OPERATION_TABLE(self)->pgresult))
+    while ((GTK_TABLE_PRINT(self)->datarow) <
+            PQntuples (GTK_TABLE_PRINT(self)->pgresult))
     {
-        GTK_PRINT_OPERATION_TABLE(self)->ypos = 0;
-        render_page (GTK_PRINT_OPERATION_TABLE(self));
-        g_ptr_array_add (GTK_PRINT_OPERATION_TABLE(self)->PageEndRow,
-                (gpointer)(GTK_PRINT_OPERATION_TABLE(self)->datarow));
-        ++(GTK_PRINT_OPERATION_TABLE(self)->TotPages);
+        GTK_TABLE_PRINT(self)->ypos = 0;
+        render_page (GTK_TABLE_PRINT(self));
+        g_ptr_array_add (GTK_TABLE_PRINT(self)->PageEndRow,
+                (gpointer)(GTK_TABLE_PRINT(self)->datarow));
+        ++(GTK_TABLE_PRINT(self)->TotPages);
     }
 
     gtk_print_operation_set_n_pages (self,
-            GTK_PRINT_OPERATION_TABLE(GTK_PRINT_OPERATION_TABLE(self))->TotPages ? GTK_PRINT_OPERATION_TABLE(self)->TotPages : 1);
+            GTK_TABLE_PRINT(GTK_TABLE_PRINT(self))->TotPages ? GTK_TABLE_PRINT(self)->TotPages : 1);
     // Re-initialize Global variables
-    g_object_unref (GTK_PRINT_OPERATION_TABLE(self)->layout);
-    GTK_PRINT_OPERATION_TABLE(self)->DoPrint = TRUE;
-    GTK_PRINT_OPERATION_TABLE(self)->datarow = 0;
-    GTK_PRINT_OPERATION_TABLE(self)->pageno = 0;
+    g_object_unref (GTK_TABLE_PRINT(self)->layout);
+    GTK_TABLE_PRINT(self)->DoPrint = TRUE;
+    GTK_TABLE_PRINT(self)->datarow = 0;
+    GTK_TABLE_PRINT(self)->pageno = 0;
 }
 
 /*
  *
- * render_report (GtkPrintOperationTable *self)
- * @self: The #GtkPrintOperationTable
+ * render_report (GtkTablePrint *self)
+ * @self: The #GtkTablePrint
  *
  * Renders the report, I.E, does the actual printout
  *
  */
 
 static void
-render_report (GtkPrintOperationTable *self)
+render_report (GtkTablePrint *self)
 {
     GError *g_err;
 
@@ -1774,5 +1798,5 @@ render_report (GtkPrintOperationTable *self)
             GTK_PRINT_OPERATION_ACTION_PREVIEW, self->w_main, &g_err);
 
     // Now free up everything that has been allocated...
-    g_ptr_array_free (GTK_PRINT_OPERATION_TABLE(self)->PageEndRow, TRUE);
+    g_ptr_array_free (GTK_TABLE_PRINT(self)->PageEndRow, TRUE);
 }
