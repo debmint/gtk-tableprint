@@ -19,19 +19,19 @@ extern "C"
 
 G_BEGIN_DECLS
 
-#define GTK_TYPE_TABLE_PRINT (gtk_table_print_get_type())
+#define STYLE_PRINT_TYPE_TABLE (style_print_table_get_type())
 
 //#define GTK_TABLE_PRINT(o) (G_TYPE_CHECK_INSTANCE_CAST ((o), TABLE_TYPE_PRINT_OPERATION, TablePrintOperation))
 
 //#define TABLE_IS_PRINT_OPERATION(o) (G_TYPE_CHECK_INSTANCE_TYPE((o), TABLE_TYPE_PRINT_OPERATION))
 
-G_DECLARE_FINAL_TYPE(GtkTablePrint,gtk_table_print, GTK, TABLE_PRINT, GtkPrintOperation)
+G_DECLARE_FINAL_TYPE(StylePrintTable,style_print_table, STYLE_PRINT, TABLE, GtkPrintOperation)
 
 //typedef struct _TablePrintOperationClass TablePrintOperationClass;
-//typedef struct _GtkGtkTablePrint GtkGtkTablePrint
+//typedef struct _GtkStylePrintTable GtkGtkTablePrint
 //typedef struct _TablePrintOperation TablePrintOperation;
 
-struct _GtkTablePrintClass
+struct _StylePrintTableClass
 {
     GtkPrintOperationClass parent_class;
 };
@@ -119,11 +119,12 @@ enum
     BDY_VBAR  = 1 << 8
 } BodyLines;
 
-GtkTablePrint *gtk_table_print_new(void);
-void gtk_table_print_from_xmlfile (GtkTablePrint *tblprnt,
+StylePrintTable *style_print_table_new(void);
+void style_print_table_from_xmlfile (StylePrintTable *tblprnt,
                 GtkWindow *win, PGresult *res, char *filename);
-void gtk_table_print_from_xmlstring (GtkTablePrint *tp,
+void style_print_table_from_xmlstring (StylePrintTable *tp,
                 GtkWindow *w, PGresult *p, char *c);
+gchar *style_print_table_greet();
 
 //typedef struct tbl_data {
 //} TBLDATA, *PTBLDATA;
