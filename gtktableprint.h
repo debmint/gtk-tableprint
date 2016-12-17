@@ -36,16 +36,6 @@ struct _GtkTablePrintClass
     GtkPrintOperationClass parent_class;
 };
 
-/**
- * Constants:
- * @DFLTFONT: Default font name
- * @DFLTSIZE: Default size in points
- *
- */
-
-#define DFLTFONT "Sans Serif"
-#define DFLTSIZE 10
-
 #ifndef STRMATCH
 #   define STRMATCH(a,b) (strcmp(a, b) == 0)
 #endif

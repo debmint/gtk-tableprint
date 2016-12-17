@@ -54,6 +54,16 @@
  * because this object handles this setup itself.
  */
 
+/**
+ * Constants:
+ * @DFLTFONT: Default font name
+ * @DFLTSIZE: Default size in points
+ *
+ */
+
+#define DFLTFONT "Sans Serif"
+#define DFLTSIZE 10
+
 //GtkPrintOperation *po;
 static void render_report (GtkTablePrint*);
 static void start_element_main(GMarkupParseContext *, const gchar *,
