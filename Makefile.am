@@ -8,6 +8,8 @@ AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq`
 AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
 			-L`pg_config --libdir` -lexpat
 
+IR_SCANFLAGS = `pkg-config --cflags libpq`
+
 ACLOCAL_AMFLAGS = -I m4
 DISTCHECK_CONFIGURE_FLAGS = --enable-introspection
 
@@ -32,7 +34,7 @@ introspection_sources = $(libtableprint_la_SOURCES)
 
 GtkTablePrint-1.0-gir: libtableprint.la
 GtkTablePrint_1_0_gir_INCLUDES = Gtk-3.0
-GtkTablePrint_1_0_gir_CFLAGS = $(INCLUDES)
+GtkTablePrint_1_0_gir_CFLAGS = $(IR_SCANFLAGS)
 GtkTablePrint_1_0_gir_LIBS =libtableprint.la
 GtkTablePrint_1_0_gir_FILES = $(introspection_sources) $(include_HEADERS)
 GtkTablePrint_1_0_gir_NAMESPACE = GtkTablePrint

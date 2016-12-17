@@ -36,6 +36,13 @@ struct _GtkTablePrintClass
     GtkPrintOperationClass parent_class;
 };
 
+/**
+ * Constants:
+ * @DFLTFONT: Default font name
+ * @DFLTSIZE: Default size in points
+ *
+ */
+
 #define DFLTFONT "Sans Serif"
 #define DFLTSIZE 10
 
@@ -123,9 +130,9 @@ enum
 } BodyLines;
 
 GtkTablePrint *gtk_table_print_new(void);
-void *gtk_table_print_from_xmlfile (GtkTablePrint *tblprnt,
+void gtk_table_print_from_xmlfile (GtkTablePrint *tblprnt,
                 GtkWindow *win, PGresult *res, char *filename);
-void *gtk_table_print_from_xmlstring (GtkTablePrint *tp,
+void gtk_table_print_from_xmlstring (GtkTablePrint *tp,
                 GtkWindow *w, PGresult *p, char *c);
 
 //typedef struct tbl_data {

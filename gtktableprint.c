@@ -975,7 +975,7 @@ reset_default_cell ()
  * contained in a file.
  */
 
-void *
+void
 gtk_table_print_from_xmlfile (GtkTablePrint *tbl,
                                         GtkWindow *wmain,
                                         PGresult *res,
@@ -997,7 +997,7 @@ gtk_table_print_from_xmlfile (GtkTablePrint *tbl,
 
     if (!(fp = fopen (fname, "rb")))
     {
-        return NULL;
+        return;
     }
 
     gmp_contxt =
@@ -1013,7 +1013,7 @@ gtk_table_print_from_xmlfile (GtkTablePrint *tbl,
     reset_default_cell ();
     render_report (tbl);
     //free_default_cell();
-    return GTK_TABLE_PRINT(tbl)->grpHd; // Temporary - for debugging
+    //return GTK_TABLE_PRINT(tbl)->grpHd; // Temporary - for debugging
 }
 
 /**
@@ -1028,7 +1028,7 @@ gtk_table_print_from_xmlfile (GtkTablePrint *tbl,
  *
  */
 
-void *
+void
 gtk_table_print_from_xmlstring (  GtkTablePrint *tbl,
                                             GtkWindow *wmain,
                                             PGresult *res,
@@ -1052,7 +1052,7 @@ gtk_table_print_from_xmlstring (  GtkTablePrint *tbl,
     reset_default_cell ();
     render_report (tbl);
     free_default_cell();
-    return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
+    //return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
 }
 
 /* ******************************************************************** *
