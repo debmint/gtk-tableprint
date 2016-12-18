@@ -1,5 +1,5 @@
 # ######################################################################### $
-# Makefile for gtktableprint.                                          		$
+# Makefile for styletableprint.                                          		$
 # $Id::                                                                     $
 # ######################################################################### $
 
@@ -13,15 +13,15 @@ IR_SCANFLAGS = `pkg-config --cflags libpq`
 ACLOCAL_AMFLAGS = -I m4
 DISTCHECK_CONFIGURE_FLAGS = --enable-introspection
 
-source_h = gtktableprint.h $(NULL)
+source_h = styletableprint.h $(NULL)
 
-lib_LTLIBRARIES	= libtableprint.la
-libtableprint_la_SOURCES = gtktableprint.c
-include_HEADERS = gtktableprint.h
+lib_LTLIBRARIES	= libstyletableprint.la
+libstyletableprint_la_SOURCES = styletableprint.c
+include_HEADERS = styletableprint.h
 
-tableprintincludedir = $(srcdir)
+styletableprintincludedir = $(srcdir)
 
-tableprintinclude_DATA = $(sources_h) $(NULL)
+styletableprintinclude_DATA = $(sources_h) $(NULL)
 
 CLEANFILES =
 
@@ -30,12 +30,12 @@ INTROSPECTION_GIRS = StylePrint_1_0_gir
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --warn-all
 
 if HAVE_INTROSPECTION
-introspection_sources = $(libtableprint_la_SOURCES)
+introspection_sources = $(libstyletableprint_la_SOURCES)
 
-StylePrint-1.0-gir: libtableprint.la
+StylePrint-1.0-gir: libstyletableprint.la
 StylePrint_1_0_gir_INCLUDES = Gtk-3.0
 StylePrint_1_0_gir_CFLAGS = $(IR_SCANFLAGS)
-StylePrint_1_0_gir_LIBS =libtableprint.la
+StylePrint_1_0_gir_LIBS =libstyletableprint.la
 StylePrint_1_0_gir_FILES = $(introspection_sources) $(include_HEADERS)
 StylePrint_1_0_gir_NAMESPACE = StylePrint
 INTROSPECTION_GIRS += StylePrint-1.0.gir

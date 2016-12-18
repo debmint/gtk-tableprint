@@ -25,10 +25,10 @@
 #include <pango/pango.h>
 #include <glib-object.h>
 #include <cairo.h>
-#include "gtktableprintpriv.h"
+#include "styletableprintpriv.h"
 
 /**
- * SECTION:gtktableprint
+ * SECTION:styletableprint
  * @Title: StylePrintTable
  * @Short_description: Print tabular data from PostGres, using #GtkPrintOperation
  * @See_also: #GtkPrintOperation, #libpq (in PostGreSQL documentation)
@@ -41,7 +41,7 @@
  *
  * To print a document, you first create a #StylePrintTable object with
  * style_print_table_new().  You then begin printing by calling the
- * function style_print_table_from_xmlstring() or gtk_table_print_from_xmlfile()
+ * function style_print_table_from_xmlstring() or style_print_table_from_xmlfile()
  * Parameters to pass to the the function which are:
  * the #StylePrintTable object, a window (normally the main window)
  * is to be the parent window of any warning dialogs, etc.  This window
@@ -107,6 +107,7 @@ struct _StylePrintTable
     GRPINF *DocHeader;  /* The Document Header (header for first page)  */
     GRPINF *PageHeader; /* The Pagheader (header for each page)         */
     GRPINF *grpHd;
+    PGconn *conn;
     PGresult *pgresult; /* Pointer to the PostGreSQL pgresult           */
     GSList *elList;
 };
@@ -158,6 +159,7 @@ style_print_table_init (StylePrintTable *op)
     //g_signal_connect (po, "draw-page", G_CALLBACK(draw_page), self);
     gtk_print_operation_set_default_page_setup (GTK_PRINT_OPERATION(op),
             op->Page_Setup);
+    op->w_main = NULL;
 }
 
 static void
@@ -986,64 +988,161 @@ reset_default_cell ()
     }
 }
 
+static PGresult *
+get_data (StylePrintTable *self, const char * qry, GPtrArray *params)
+{
+    PGresult *rslt;
+
+    if (params == NULL)
+    {
+        rslt = PQexec (self->conn, qry);
+    }
+    else
+    {
+        rslt = PQexecParams(self->conn,
+                            qry,
+                            params->len,
+                            NULL,       // paramTypes not used
+                            (const gchar **)params->pdata,// Array of parameters
+                            NULL,       // list of parameter lengths -ignore
+                            NULL,
+                            0);         // returned formats - make all text
+    }
+
+    if (PQresultStatus (rslt) != PGRES_TUPLES_OK)
+    {
+        // TODO: add functionality to show message in dialog box
+        printf ("\nFailed to retrieve data!!\n");
+        printf (PQresultErrorMessage(rslt));
+        PQclear (rslt);
+        rslt = NULL;
+    }
+
+    return rslt;
+}
+
+int
+db_connect (StylePrintTable *self, gchar *dbn)
+{
+    PGresult *res;
+    // Temporary...
+    //
+    gchar *dbs = "dbname='records' host='David-Notebook'";
+
+    self->conn = PQconnectdb(dbs);
+
+    if (PQstatus(self->conn) != CONNECTION_OK)
+    {
+        fprintf(stderr, "Failed to connect to db\n");
+        self->conn = NULL;
+        return 0;
+    }
+
+    // For now, do a hard-coded set search_path
+    res = PQexec(self->conn, "SET search_path TO public,dwl");
+
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        fprintf(stderr, "Failed setting search_path\n");
+    }
+
+    PQclear(res);
+    return 1;
+}
+
 /**
  * style_print_table_from_xmlfile:
- * @tblprnt: The #StylePrintTable
- * @win: The parent window
- * @res: The PGresult that contains the data to print
- * @filename: The filename to open and read to get the xml definition for the printout.
+ * @tblprnt: (element-type StylePrint.Table): The StylePrintTable
+ * @win: (element-type Gtk.Window) (nullable): The parent window - NULL if none
+ * @qry: (element-type utf8): The query to send which will retrieve the data to print
+ * @parms: (element-type GPtrArray) (nullable): GPtrArray * for parameter list.  NULL if not used
+ * @filename: (element-type utf8): The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is
  * contained in a file.
  */
 
 void
-style_print_table_from_xmlfile (StylePrintTable *tbl,
+style_print_table_from_xmlfile (StylePrintTable *self,
                                         GtkWindow *wmain,
-                                        PGresult *res,
+                                        gchar *qry,
+                                        GPtrArray *parms,
                                         char *fname)
 {
-    char buf[300];
+    char buf[3000];
     FILE *fp;
     int rdcount;
     GMarkupParseContext *gmp_contxt;
     GError *error;
+    PGresult *res;
 
-    tbl->w_main = wmain;
-    tbl->pgresult = res;
-
-    if (!tbl->Page_Setup)
+    if (wmain)
     {
-        set_page_defaults (tbl);
+        self->w_main = wmain;
+    }
+
+    if (! db_connect (self, ""))
+    {
+        fprintf(stderr, "Could not connect with db_connect()");
+        return;
+    }
+
+    res = get_data (self, qry, parms);
+
+    if (res == NULL)
+    {
+        return;
+    }
+
+    self->pgresult = res;
+
+    if (!self->Page_Setup)
+    {
+        set_page_defaults (self);
     }
 
     if (!(fp = fopen (fname, "rb")))
     {
+        fprintf(stderr,"Failed to open file: '%s'\n",fname);
         return;
     }
 
     gmp_contxt =
         g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
-                                        NULL, NULL);
+                                        self, NULL);
     
     while ((rdcount = fread (buf, 1, sizeof(buf), fp)))
     {
-        g_markup_parse_context_parse (gmp_contxt, buf, rdcount, &error);
+        error = NULL;
+
+        if (!g_markup_parse_context_parse (gmp_contxt, buf, rdcount, &error))
+        {
+            fprintf(stderr, "Error reading XML file\n");
+            fprintf(stderr, error->message);
+            break;
+        }
     }
 
     fclose(fp);
     reset_default_cell ();
-    render_report (tbl);
+
+    if ( !error)
+    {
+        render_report (self);
+    }
+
+    PQclear (self->pgresult);
     //free_default_cell();
     //return STYLE_PRINT_TABLE(tbl)->grpHd; // Temporary - for debugging
 }
 
 /**
  * style_print_table_from_xmlstring:
- * @tp: The #StylePrintTable
- * @w: The parent window
- * @p: The PGresult that contains the data to print
- * @c: The filename to open and read to get the xml definition for the printout.
+ * @tp: (element-type StylePrintTable): The #StylePrintTable
+ * @w: (element-type Gtk.Window) (nullable): The parent window - NULL if none
+ * @qry: (element-type utf8): The query to send to retrieve the data to print
+ * @parms: (element-type GPtrArray) (nullable): GPtrArray * for parameter list.  NULL if not used
+ * @c: (element-type utf8): Pointer to the string containing the xml formatting
  *
  * Print a table where the definition for the format is contained in an
  * xml string.
@@ -1051,28 +1150,48 @@ style_print_table_from_xmlfile (StylePrintTable *tbl,
  */
 
 void
-style_print_table_from_xmlstring (  StylePrintTable *tbl,
+style_print_table_from_xmlstring (  StylePrintTable *self,
                                             GtkWindow *wmain,
-                                            PGresult *res,
+                                            gchar *qry,
+                                            GPtrArray *parms,
                                             char *xml)
 {
     GMarkupParseContext *gmp_contxt;
     GError *error;
+    PGresult *res;
 
-    tbl->w_main = wmain;
-    tbl->pgresult = res;
-
-    if (!tbl->Page_Setup)
+    if (wmain)
     {
-        set_page_defaults (tbl);
+        self->w_main = wmain;
+    }
+
+    if (! db_connect (self, ""))
+    {
+        fprintf(stderr, "Could not connect with db_connect()`");
+        return;
+    }
+
+    res = get_data (self, qry, parms);
+
+    if (res == NULL)
+    {
+        return;
+    }
+
+    self->pgresult = res;
+
+    if (!self->Page_Setup)
+    {
+        set_page_defaults (self);
     }
 
     gmp_contxt =
         g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
-                tbl, NULL);
+                self, NULL);
     g_markup_parse_context_parse (gmp_contxt, xml, strlen(xml), &error);
     reset_default_cell ();
-    render_report (tbl);
+    render_report (self);
+    PQclear (self->pgresult);
     free_default_cell();
     //return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
 }
@@ -1817,8 +1936,8 @@ render_report (StylePrintTable *self)
     GError *g_err;
 
     gtk_print_operation_run (GTK_PRINT_OPERATION(self),
-            GTK_PRINT_OPERATION_ACTION_PREVIEW, self->w_main, &g_err);
-
+            GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, self->w_main, &g_err);
+    
     // Now free up everything that has been allocated...
     g_ptr_array_free (STYLE_PRINT_TABLE(self)->PageEndRow, TRUE);
 }

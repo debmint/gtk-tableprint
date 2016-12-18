@@ -13,8 +13,8 @@ extern "C"
 
 //#include <string.h>
 #include <gtk/gtk.h>
-#include <glib-object.h>
-//#include <glib.h>
+//#include <glib-object.h>
+#include <glib.h>
 #include <libpq-fe.h>
 
 G_BEGIN_DECLS
@@ -121,9 +121,9 @@ enum
 
 StylePrintTable *style_print_table_new(void);
 void style_print_table_from_xmlfile (StylePrintTable *tblprnt,
-                GtkWindow *win, PGresult *res, char *filename);
+                GtkWindow *win, gchar *qry, GPtrArray *parms, char *filename);
 void style_print_table_from_xmlstring (StylePrintTable *tp,
-                GtkWindow *w, PGresult *p, char *c);
+                GtkWindow *w, gchar *qry, GPtrArray *parms, char *c);
 gchar *style_print_table_greet();
 
 //typedef struct tbl_data {

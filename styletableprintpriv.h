@@ -3,7 +3,7 @@
  * $Id:: tblprint.h 40 2016-11-27 22:30:07Z dlb                             $
  * ************************************************************************ */
 
-#include "gtktableprint.h"
+#include "styletableprint.h"
 
 // A structure to determine the padding for a row, defined in
 // PrintContext units
