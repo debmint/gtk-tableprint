@@ -14,18 +14,20 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
+AC_PROG_CXX
+LT_INIT
 
 #
 # GObject Introspection
 #
 
+GTK_DOC_CHECK([1.0], [--flavour no-tmpl])
 GOBJECT_INTROSPECTION_CHECK([1.30.0])
 
 # Checks for libraries.
 
 AC_FUNC_MALLOC
-AC_PROG_CXX
-AC_PROG_RANLIB
+#AC_PROG_RANLIB
 
 # Checks for header files.
 
@@ -45,5 +47,5 @@ esac
 
 AC_SUBST(noundef)
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile docs/Makefile docs/reference/Makefile])
 AC_OUTPUT

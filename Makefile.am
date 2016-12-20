@@ -8,6 +8,8 @@ AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq`
 AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
 			-L`pg_config --libdir` -lexpat
 
+SUBDIRS = docs
+
 IR_SCANFLAGS = `pkg-config --cflags libpq`
 
 ACLOCAL_AMFLAGS = -I m4
