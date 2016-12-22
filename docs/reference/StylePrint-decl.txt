@@ -1,0 +1,136 @@
+<MACRO>
+<NAME>HAVE_DLFCN_H</NAME>
+#define HAVE_DLFCN_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_INTTYPES_H</NAME>
+#define HAVE_INTTYPES_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_MALLOC</NAME>
+#define HAVE_MALLOC 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_MEMORY_H</NAME>
+#define HAVE_MEMORY_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_STDINT_H</NAME>
+#define HAVE_STDINT_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_STDLIB_H</NAME>
+#define HAVE_STDLIB_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_STRINGS_H</NAME>
+#define HAVE_STRINGS_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_STRING_H</NAME>
+#define HAVE_STRING_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_SYS_STAT_H</NAME>
+#define HAVE_SYS_STAT_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_SYS_TYPES_H</NAME>
+#define HAVE_SYS_TYPES_H 1
+</MACRO>
+<MACRO>
+<NAME>HAVE_UNISTD_H</NAME>
+#define HAVE_UNISTD_H 1
+</MACRO>
+<MACRO>
+<NAME>LT_OBJDIR</NAME>
+#define LT_OBJDIR ".libs/"
+</MACRO>
+<MACRO>
+<NAME>PACKAGE</NAME>
+#define PACKAGE "styletableprint"
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_BUGREPORT</NAME>
+#define PACKAGE_BUGREPORT ""
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_NAME</NAME>
+#define PACKAGE_NAME "styletableprint"
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_STRING</NAME>
+#define PACKAGE_STRING "styletableprint 0.1"
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_TARNAME</NAME>
+#define PACKAGE_TARNAME "styletableprint"
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_URL</NAME>
+#define PACKAGE_URL ""
+</MACRO>
+<MACRO>
+<NAME>PACKAGE_VERSION</NAME>
+#define PACKAGE_VERSION "0.1"
+</MACRO>
+<MACRO>
+<NAME>STDC_HEADERS</NAME>
+#define STDC_HEADERS 1
+</MACRO>
+<MACRO>
+<NAME>VERSION</NAME>
+#define VERSION "0.1"
+</MACRO>
+<MACRO>
+<NAME>STYLE_PRINT_TYPE_TABLE</NAME>
+#define STYLE_PRINT_TYPE_TABLE (style_print_table_get_type())
+</MACRO>
+<STRUCT>
+<NAME>StylePrintTableClass</NAME>
+struct _StylePrintTableClass
+{
+    GtkPrintOperationClass parent_class;
+};
+</STRUCT>
+<MACRO>
+<NAME>STRMATCH</NAME>
+#   define STRMATCH(a,b) (strcmp(a, b) == 0)
+</MACRO>
+<MACRO>
+<NAME>STRNMATCH</NAME>
+#   define STRNMATCH(a,b,n) (strncmp(a,b,) == 0)
+</MACRO>
+<FUNCTION>
+<NAME>style_print_table_new</NAME>
+<RETURNS>StylePrintTable  *</RETURNS>
+void
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_table_from_xmlfile</NAME>
+<RETURNS>void  </RETURNS>
+StylePrintTable *tblprnt, GtkWindow *win, gchar *qry, char *filename
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_table_from_xmlstring</NAME>
+<RETURNS>void  </RETURNS>
+StylePrintTable *tp, GtkWindow *w, gchar *qry, char *c
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_table_greet</NAME>
+<RETURNS>void  </RETURNS>
+StylePrintTable *self, gchar *ary
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_table_do</NAME>
+<RETURNS>void  </RETURNS>
+StylePrintTable *self, const gchar * qry
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_table_connect</NAME>
+<RETURNS>gint  </RETURNS>
+StylePrintTable *self, gchar *dbn
+</FUNCTION>
+<STRUCT>
+<NAME>StylePrintTable</NAME>
+</STRUCT>
