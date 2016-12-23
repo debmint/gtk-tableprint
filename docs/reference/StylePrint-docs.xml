@@ -18,8 +18,7 @@
 
   <chapter>
     <title>[Insert title here]</title>
-        <xi:include href="xml/config.xml"/>
-    <xi:include href="xml/styletableprint.xml"/>
+        <xi:include href="xml/styletableprint.xml"/>
 
   </chapter>
   <chapter id="object-tree">
