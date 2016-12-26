@@ -16,11 +16,18 @@
     </releaseinfo>
   </bookinfo>
 
-  <chapter>
-    <title>[Insert title here]</title>
-        <xi:include href="xml/styletableprint.xml"/>
-
-  </chapter>
+  <part id="styleprint-defs">
+    <title>StyleTablePrint Definitions</title>
+    <xi:include href="xml/styletableprint.xml"/>
+  </part>
+  <part>
+      <title>Definitions for the XML Specification</title>
+      <xi:include href="xml/xmldefs.xml"/>
+      <xi:include href="xml/groupdef.xml"/>
+      <xi:include href="xml/bodydef.xml"/>
+      <xi:include href="xml/commondefs.xml"/>
+      <xi:include href="xml/celldef.xml"/>
+  </part>
   <chapter id="object-tree">
     <title>Object Hierarchy</title>
     <xi:include href="xml/tree_index.sgml"/>

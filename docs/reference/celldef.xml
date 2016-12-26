@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+
+<chapter id='xmlcelldef'><title>Cell Definition</title>
+  <table frame='all'><title>Attributes</title>
+    <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+      <thead>
+        <row>
+          <entry>Name</entry>
+          <entry>Type</entry>
+          <entry>Default</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row>
+          <entry>percent</entry>
+          <entry>CDATA</entry>
+          <entry>&lt;none&gt;</entry>
+        </row>
+        <row>
+          <entry>cellwidth</entry>
+          <entry></entry>
+          <entry></entry>
+        </row>
+        <row>
+          <entry>textsource</entry>
+          <entry>
+            <simplelist>
+              <member><emphasis>Enumeration:</emphasis></member>
+              <member>data</member>
+              <member>static</member>
+              <member>now</member>
+              <member>printf</member>
+              <member>pageof</member>
+            </simplelist>
+          </entry>
+          <entry></entry>
+        </row> 
+        <row>
+          <entry>celltext</entry>
+          <entry>CDATA</entry>
+          <entry>&lt;none&gt;</entry>
+        </row>
+        <row>
+          <entry>align</entry>
+          <entry><simplelist>
+              <member><emphasis>Enumeration:</emphasis></member>
+              <member>l</member>
+              <member>c</member>
+              <member>r</member>
+          </simplelist></entry>
+          <entry></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+  <para>
+    <variablelist><title>Attributes</title>
+      <varlistentry>
+        <term>percent</term>
+        <listitem>The percent of the horizontal line that this cell will
+          occupy.
+          <note>No check is made to verify that the total percent of all
+          cells does not exceed 100%.  It is up to the user to make sure
+          that the total is within range.</note>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>cellwidth</term>
+        <listitem>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>textsource</term>
+        <listitem>
+          <para>
+            This specifies from where the data is coming.  The following
+            explains the possible sources.
+          </para>
+          <para>
+            <variablelist><title>Textsource Values</title>
+              <varlistentry>
+                <term>data (requires "celltext")</term>
+                <listitem>The text comes from the database.  "Celltext" is
+                  presented as a string declaring the table column in the
+                  database where the text is supplied.
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>static (requires "celltext"</term>
+                <listitem>This represents a constant string to be printed
+                  in this cell.
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>now</term>
+                <listitem>This prints the current timestamp
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>printf (requires "celltext")</term>
+                <listitem>This declares a "printf"-style entry.  When this is
+                  specified, "celltext" is presented as a comma-separated string
+                  which declares the data that is printed.
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>pageof</term>
+                <listitem>Prints a string "Page x of y", which would only be
+                  useful in a page header.
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>celltext</term>
+        <listitem>This declares what the actual text is which is printed.
+          If the textsource is "data", then the column name from which the
+          data is retrieved is what is printed.
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </para>
+</chapter>

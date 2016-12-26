@@ -28,7 +28,7 @@
 #include "styletableprintpriv.h"
 
 /**
- * SECTION:styletableprint
+ * SECTION: styletableprint
  * @Title: StylePrintTable
  * @Short_description: Print data from PostGres, in tabular form using #GtkPrintOperation
  * @See_also: #GtkPrintOperation, #libpq (in PostGreSQL documentation)
@@ -1772,11 +1772,16 @@ render_report (StylePrintTable *self)
 /**
  * style_print_table_connect:
  * @self: The #StylePrintTable *
- * @dbn: The connection string set up in the way it is sent to the database (see PostgreSQL documentation for details on format)
+ * @dbn: The connection string set up in the way it is sent to the database
+ *(see PostgreSQL documentation for details on format)
+ *
+ * Returns: 1 on success, 0 on failure.
  *
  * Establishes a connection to the database.  This must be done before any
  * queries or commands are sent to the database.
+ *
  * Free the string upon return if need be.
+ *
  */
 
 gint
@@ -1801,13 +1806,17 @@ style_print_table_connect (StylePrintTable *self, gchar *dbn)
  * @param: The parameter value to add.
  *
  * Appends a parameter onto the list of parameters for the upcoming query.
+ * The query refers to these parameters with the nomenclature of '$1', '$2',
+ * etc.
+ *
  * The order is important!  The parameters must appear in the list in the
  * order in which they are referred to in the query.
+ *
  * If the values need to be freed, do this after the query is executed.
  */
 
 void
-style_print_table_appendParam (StylePrintTable *self, gchar *param)
+style_print_table_appendParam (StylePrintTable *self, const gchar *param)
 {
     if ( ! self->qryParams)
     {

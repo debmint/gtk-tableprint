@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!DOCTYPE partintro PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+<partintro id="xmldefsintro">
+<para>
+  The format for the printout is defined by an xml structure, which can
+  either be read from a string embedded within the program itself, or from
+  a file external to the program.
+</para>
+<para>
+  The data is read by the #GMarkupParser utility in the #Glib module.  It
+  is not really strict in itself, and cannot use a DTD or any advanced
+  features, but the format is determined within the #StylePrintTable class
+  itself.
+</para>
+<para>
+  The structure of the data is rather specific.  The main block must be
+  &lt;config&gt;, with, of course, a closing &lt;/config&gt; as the final
+  line.
+</para>
+<para>
+  After the &lt;config&gt;, there can be one of several blocks.
+  <!--<variablelist>-->
+  <varlistentry id="docheaderdef">
+    <term>&lt;docheader&gt;</term>
+    <listitem><para>
+      This is a header that can appear at the top of the first page.
+    </para></listitem>
+  </varlistentry>
+
+  <varlistentry id="pageheaderdef">
+    <term>&lt;pageheader&gt;</term>
+    <listitem><para>
+      This is a header that appears at the top of every page.
+    </para></listitem>
+  </varlistentry>
+
+  <varlistentry>
+    <term><link linkend="groupdef">&lt;group&gt;</link></term>
+    <listitem>
+      <para>
+      A group can have the following attributes:
+      </para>
+    </listitem>
+  </varlistentry>
+
+  <varlistentry id="bodydef">
+    <term>&lt;body&gt;</term>
+    <listitem><para>
+      This is where the columnar data is printed.  It must have as a
+      parent either a &lt;group&gt; or the toplevel &lt;config&gt;.
+    </para></listitem>
+  </varlistentry>
+  <!--</variablelist>-->
+</para>
+</partintro>
+
+<!-- vim: sw=2 ts=2
+-->

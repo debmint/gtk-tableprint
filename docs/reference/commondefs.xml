@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+
+<chapter id="common_attribs"><title>Common Attributes</title>
+  <formalpara><title>Synopsis</title>
+    <para>These attributes are attributes common to most (if not all) entities
+      in the #StylePrint grouping.
+    </para>
+  </formalpara>
+  <para>
+    <table frame='all'><title>Attributes</title>
+      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+        <thead>
+          <row>
+            <entry>Name</entry>
+            <entry>Type</entry>
+            <entry>Default</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>pointsabove</entry>
+            <entry>CDATA</entry>
+            <entry></entry>
+          </row>
+          <row>
+            <entry>pointsbelow</entry>
+            <entry>CDATA</entry>
+            <entry></entry>
+          </row>
+          <row>                
+            <entry>outerborder</entry>
+            <entry>
+              <simplelist>
+                <member><emphasis>Enumeration:</emphasis></member>
+                <member>singlebar</member>
+                <member>singlebarheavy</member>
+                <member>doublebar</member>
+                <member>singlebox</member>
+                <member>doublebox</member>
+              </simplelist>
+            </entry>
+            <entry></entry>
+          </row>
+          <row>
+            <entry></entry>
+            <entry></entry>
+            <entry></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+      <varlistentry>
+        <term>pointsabove</term>
+        <listitem><para>
+            The space (in points) to leave above the group.
+        </para></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>pointsbelow</term>
+        <listitem><para>
+            The space(in points) to leave below the group.
+        </para></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>outerborder</term>
+        <listitem><para>
+            A line border to surround the entire group.  Valid values are:
+          </para>
+          <para>
+            <table frame="all"><title>Values</title>
+              <tgroup cols='2' align='left' colsep='1' rowsep='1'>
+                <thead>
+                  <row>
+                    <entry>Value</entry>
+                    <entry>Description</entry>
+                  </row>
+                </thead>
+                <tbody>
+                  <row>
+                    <entry>singlebar</entry>
+                    <entry>A single line above and below the group.
+                    </entry>
+                  </row>
+                  <row>
+                    <entry>doublebar</entry>
+                    <entry>A double line above and below the group.
+                    </entry>
+                  </row>
+                  <row>
+                    <entry>singlebarheavy</entry>
+                    <entry>A single heavy line above and below the group.
+                    </entry>
+                  </row>
+                  <row>
+                    <entry>singlebox</entry>
+                    <entry>A box around the group drawn with a single line.
+                    </entry>
+                  </row>
+                  <row>
+                    <entry>doublebox</entry>
+                    <entry>A box around the group drawn with a double line,
+                      with the outeri line being heavier than the inner.
+                    </entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </table>
+          </para>
+        </listitem>
+      </varlistentry>
+  </para>
+</chapter>

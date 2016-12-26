@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+
+<chapter id="xmlbodydef"><title>Body</title>
+  <para>
+    body:: (font?, <link linkend='xmlcelldef'>cell+</link>)
+  </para>
+  <para>
+    <table frame="all"><title>Attributes</title>
+      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+        <thead>
+          <row>
+            <entry>Name</entry>
+            <entry>Type</entry>
+            <entry>Default</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>cellborder</entry>
+            <entry><simplelist>
+                <member><emphasis>Enumeration:</emphasis></member>
+                <member>hline</member>
+                <member>vbar</member>
+                <member>boxed</member>
+              </simplelist>
+            </entry>
+            <entry>&lt;none&gt;</entry>
+          </row>
+          <row>
+            <entry><link linkend='common_attribs'>Common Attributes</link>
+            </entry>
+            <entry></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </para>
+  <para>
+    <variablelist><title>Attribute Description</title>
+      <varlistentry>
+        <term>cellborder</term>
+        <listitem><para>Adds a border around, to, or beside the cell.  The types
+            are:</para>
+          <para>
+            <variablelist>
+              <varlistentry>
+                <term>hline</term>
+                <listitem>Draws a line across the page.
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>vbar</term>
+                <listitem>Draws a vertical bar after the cell is printed.
+                </listitem>
+              </varlistentry>
+              <varlistentry>
+                <term>boxed</term>
+                <listitem>Draws a box around the cell.
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </para>
+  <formalpara><title>Description</title>
+    <para>
+      The <code>body</code> is where the columnar data is printed.  This
+      defines the layout in which the data is printed.  This is specified
+      by an array of &lt;cell&gt; definitions, which specify the percentage,
+      font and other definitions.
+    </para>
+  </formalpara>
+</chapter>

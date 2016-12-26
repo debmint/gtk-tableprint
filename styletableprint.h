@@ -121,12 +121,21 @@ enum
 
 StylePrintTable *style_print_table_new(void);
 void style_print_table_from_xmlfile (StylePrintTable *tblprnt,
-                GtkWindow *win, gchar *qry, char *filename);
+                                           GtkWindow *win,
+                                               gchar *qry,
+                                                char *filename);
 void style_print_table_from_xmlstring (StylePrintTable *tp,
-                GtkWindow *w, gchar *qry, char *c);
-void style_print_table_greet(StylePrintTable *self, gchar *ary);
-void style_print_table_do (StylePrintTable *self, const gchar * qry);
-gint style_print_table_connect (StylePrintTable *self, gchar *dbn);
+                                             GtkWindow *w,
+                                                 gchar *qry,
+                                                  char *c);
+void style_print_table_greet(       StylePrintTable *self,
+                                              gchar *ary);
+void style_print_table_do (         StylePrintTable *self,
+                                        const gchar *qry);
+void style_print_table_appendParam (StylePrintTable *self,
+                                        const gchar *param);
+gint style_print_table_connect (StylePrintTable *self,
+                                          gchar *dbn);
 
 //typedef struct tbl_data {
 //} TBLDATA, *PTBLDATA;

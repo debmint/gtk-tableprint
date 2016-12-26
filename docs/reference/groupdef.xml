@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+<chapter id="groupdef"><title>Groups</title>
+  <para>
+    group:: (header?, footer?, (group | <link linkend='xmlbodydef'>body</link>))
+  </para>
+  <para>
+    <table frame='all'><title>Attributes</title>
+      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+        <thead>
+          <row>
+            <entry>Name</entry>
+            <entry>Type</entry>
+            <entry>Default</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>groupsource</entry>
+            <entry>CDATA</entry>
+            <entry></entry>
+          </row>
+          <row>
+            <entry><link linkend='common_attribs'>Common Attribs</link></entry>
+            <entry></entry>
+            <entry></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </para>
+  <para>
+    <variablelist><title>Attribute definitions</title>
+      <varlistentry>
+        <term>groupsource</term>
+        <listitem><para>The column name from which the group is defined.  The
+            list is parsed as a group until the text in this column changes.
+            At this point, this group is closed, with a footer being printed,
+            if present, and a new group is started, with any applicable header,
+            etc. being printed.
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </para>
+  <formalpara><title>Description</title>
+    <para>
+      This is a grouping of data.  It is defined by the
+      <code>groupsource</code> attribute for this <code>group</code>,
+      which is the column name for this group.  Within this
+      <code>group</code>, a &lt;header&gt;, &lt;footer&gt;, another
+      &lt;group&gt; or &lt;body&gt; can be defined.  When a
+      <code>group</code> begins, a <code>header</code> is printed,
+      if defined, and then whatever is defined within this
+      <code>group</code> is processed.  The printout will proceed
+      until the value in this column changes, then another group is 
+      started, with the <code>group header</code> being reprinted
+      with the subsections of this group being redone.
+    </para>
+  </formalpara>
+  <para>The group MUST have either another group or body as a child.
+    Another group can be specified to further divide each (parent) group.
+    If &lt;body&gt; is specified, then all data that conforms to the
+    groupsource specification of the parent group is printed.
+  </para>
+</chapter>
