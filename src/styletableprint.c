@@ -1823,7 +1823,7 @@ style_print_table_appendParam (StylePrintTable *self, const gchar *param)
         self->qryParams = g_ptr_array_new();
     }
 
-    g_ptr_array_add (self->qryParams, param);
+    g_ptr_array_add (self->qryParams, (gpointer)param);
 }
 
 /**

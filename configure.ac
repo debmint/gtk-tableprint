@@ -3,7 +3,7 @@
 
 AC_PREREQ(2.62)
 AC_INIT(styletableprint,0.1)
-AC_CONFIG_SRCDIR([styletableprint.c])
+AC_CONFIG_SRCDIR([src/styletableprint.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wno-portability])
@@ -47,5 +47,6 @@ esac
 
 AC_SUBST(noundef)
 
-AC_CONFIG_FILES([Makefile docs/Makefile docs/reference/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile docs/Makefile \
+                 docs/reference/Makefile])
 AC_OUTPUT
