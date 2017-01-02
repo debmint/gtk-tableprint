@@ -17,6 +17,8 @@ styletableprintincludedir = $(srcdir)
 
 styletableprintinclude_DATA = $(sources_h) $(NULL)
 
+EXTRA_DIST=styletableprintpriv.h
+
 CLEANFILES =
 
 -include $(INTROSPECTION_MAKEFILE)
