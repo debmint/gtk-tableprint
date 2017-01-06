@@ -1,4 +1,10 @@
 This is a library to add the ability to print hardcopy reports in
 tabular form.  It will do the calculations for print position and
 do the rendering.  In order to do so, the formatting will need to
-be passed to the library.
+be passed to the library in the form of an xml document, which can
+either be embedded in the program or read from an external file.
+
+The data is read from a PostGreSQL database using a provided query.
+
+This library implements GObject-Introspetion, and so it can be used
+by any programming language that supports GObject-Introspection.
