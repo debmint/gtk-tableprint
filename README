@@ -3,8 +3,25 @@ tabular form.  It will do the calculations for print position and
 do the rendering.  In order to do so, the formatting will need to
 be passed to the library in the form of an xml document, which can
 either be embedded in the program or read from an external file.
+Please point your browser to the documentation in the subdirectory
+of this distribution
+           docs/reference/html/index.html
+for details of the format for this xml data.
 
 The data is read from a PostGreSQL database using a provided query.
 
 This library implements GObject-Introspetion, and so it can be used
 by any programming language that supports GObject-Introspection.
+
+===================================================================
+
+INSTALLATION NOTES
+
+Please read the file "INSTALL" for general instructions on how to
+build and install the program.  In addition to the instructions in
+that file whey you run "./configure", you need to include the option
+
+                          --enable-gtk-doc
+
+to enable the building of the Gtk Documentation, as this feature is
+disabled by default.
