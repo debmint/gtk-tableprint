@@ -117,7 +117,7 @@ struct _StylePrintTable
 
     // Connection Variables
     PGconn *conn;           // The connection
-    PGresult *pgresult;     // Pointer to the PostGreSQL PGresult
+    GPtrArray *pgresult;     // Pointer to the PostGreSQL PGresult
     GPtrArray *qryParams;   // Array of pointers to Query Params
 
     // Headers
@@ -165,19 +165,42 @@ GMarkupParser prsr = {start_element_main, end_element_main, NULL,
 //GMarkupParser sub_prs = {start_element_main, end_element_main, NULL,
 //                        NULL, prs_err};
 
+void
+htlist(gchar *key,gchar *val, gpointer usrdat)
+{
+    fprintf(stderr,"%s=>%s  ",key,val);
+}
+
+void
+arylist (GHashTable *ht, gpointer udat)
+{
+    gchar *val;
+    //g_hash_table_foreach(ht,(GHFunc)htlist,NULL);
+    val = (gchar *)g_hash_table_lookup(ht,"who");
+    if (val)
+    {
+        fprintf(stderr, val);
+    }
+    else
+    {
+        fprintf(stderr, "---");
+    }
+    fprintf(stderr,"\n");
+}
+
 /**
  * style_print_table_greet:
  * @self: The StylePrintTable
- * @ary: The array to parse
+ * @ary: (element-type GHashTable): The array to parse
  *
  * This is only a temporary function to do tests, and will be deleted
  * later on.
  */
 
 void
-style_print_table_greet (StylePrintTable *self,gchar *ary)
+style_print_table_greet (StylePrintTable *self,GPtrArray *ary)
 {
-        printf ("%s\n", (ary));
+        g_ptr_array_foreach(ary,(GFunc)arylist, NULL);
 }
 
 static void
@@ -431,51 +454,51 @@ append_cell_def (StylePrintTable *self, const gchar **attrib_names,
 
     add_cell_attribs (mycell, attrib_names, attrib_vals);
 
-    if (mycell->txtsource == TSRC_DATA)
-    {
-        if (mycell->celltext && strlen(mycell->celltext))
-        {
-            mycell->cell_col = PQfnumber (self->pgresult, mycell->celltext);
-
-            if (mycell->cell_col == -1)
-            {
-                if (self->w_main)
-                {
-                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-                            GTK_DIALOG_DESTROY_WITH_PARENT,
-                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-                            "Error! '%s' is not a valid column name",
-                            mycell->celltext);
-                    gtk_dialog_run(GTK_DIALOG(dlg));
-                    gtk_widget_destroy(dlg);
-                }
-                else
-                {
-                    fprintf (stderr,"Error: '%s' is not a valid column\n",
-                            mycell->celltext);
-                }
-            }
-
-            if (PQresultStatus (self->pgresult) != PGRES_TUPLES_OK)
-            {
-                if (self->w_main)
-                {
-                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-                            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                            GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
-                            PQresultErrorMessage (self->pgresult));
-                    gtk_dialog_run (GTK_DIALOG(dlg));
-                    gtk_widget_destroy (dlg);
-                }
-                else
-                {
-                    fprintf (stderr, "Cannot determine column # for: %s\n",
-                                PQresultErrorMessage (self->pgresult));
-                }
-
-            }
-        }
-    }
+//    if (mycell->txtsource == TSRC_DATA)
+//    {
+//        if (mycell->celltext && strlen(mycell->celltext))
+//        {
+//            mycell->cell_col = PQfnumber (self->pgresult, mycell->celltext);
+//
+//            if (mycell->cell_col == -1)
+//            {
+//                if (self->w_main)
+//                {
+//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
+//                            GTK_DIALOG_DESTROY_WITH_PARENT,
+//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+//                            "Error! '%s' is not a valid column name",
+//                            mycell->celltext);
+//                    gtk_dialog_run(GTK_DIALOG(dlg));
+//                    gtk_widget_destroy(dlg);
+//                }
+//                else
+//                {
+//                    fprintf (stderr,"Error: '%s' is not a valid column\n",
+//                            mycell->celltext);
+//                }
+//            }
+//
+//            if (PQresultStatus (self->pgresult) != PGRES_TUPLES_OK)
+//            {
+//                if (self->w_main)
+//                {
+//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
+//                            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+//                            PQresultErrorMessage (self->pgresult));
+//                    gtk_dialog_run (GTK_DIALOG(dlg));
+//                    gtk_widget_destroy (dlg);
+//                }
+//                else
+//                {
+//                    fprintf (stderr, "Cannot determine column # for: %s\n",
+//                                PQresultErrorMessage (self->pgresult));
+//                }
+//
+//            }
+//        }
+//    }
 
     if (parentgrp)
     {
@@ -536,27 +559,28 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     {
         if (STRMATCH(attrib_names[grpidx], "groupsource"))
         {
-            newgrp->grpcol = PQfnumber (self->pgresult,
-                                            attrib_vals[grpidx]);
+            //newgrp->grpcol = PQfnumber (self->pgresult,
+            //                                attrib_vals[grpidx]);
+            newgrp->grpcol = g_strdup (attrib_vals[grpidx]);
 
-            if (newgrp->grpcol == -1)
-            {
-                if (self->w_main)
-                {
-                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-                            GTK_DIALOG_DESTROY_WITH_PARENT,
-                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-                            "Error! '%s' is not a valid column name",
-                            attrib_vals[grpidx]);
-                    gtk_dialog_run(GTK_DIALOG(dlg));
-                    gtk_widget_destroy(dlg);
-                }
-                else
-                {
-                    fprintf (stderr, "Error: '%s' is not a valid column\n",
-                            attrib_vals[grpidx]);
-                }
-            }
+//            if (newgrp->grpcol == -1)
+//            {
+//                if (self->w_main)
+//                {
+//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
+//                            GTK_DIALOG_DESTROY_WITH_PARENT,
+//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
+//                            "Error! '%s' is not a valid column name",
+//                            attrib_vals[grpidx]);
+//                    gtk_dialog_run(GTK_DIALOG(dlg));
+//                    gtk_widget_destroy(dlg);
+//                }
+//                else
+//                {
+//                    fprintf (stderr, "Error: '%s' is not a valid column\n",
+//                            attrib_vals[grpidx]);
+//                }
+//            }
         }
         else if (STRMATCH(attrib_names[grpidx], "pointsabove"))
         {
@@ -1011,39 +1035,6 @@ reset_default_cell ()
     }
 }
 
-static PGresult *
-get_data (StylePrintTable *self, const char * qry)
-{
-    PGresult *rslt;
-
-    if (self->qryParams == NULL)
-    {
-        rslt = PQexec (self->conn, qry);
-    }
-    else
-    {
-        rslt = PQexecParams(self->conn,
-                            qry,
-                            self->qryParams->len,
-                            NULL,       // paramTypes not used
-                            (const gchar **)self->qryParams->pdata,// Array of parameters
-                            NULL,       // list of parameter lengths -ignore
-                            NULL,
-                            0);         // returned formats - make all text
-    }
-
-    if (PQresultStatus (rslt) != PGRES_TUPLES_OK)
-    {
-        // TODO: add functionality to show message in dialog box
-        printf ("\nFailed to retrieve data!!\n");
-        printf (PQresultErrorMessage(rslt));
-        PQclear (rslt);
-        rslt = NULL;
-    }
-
-    return rslt;
-}
-
 /* ******************************************************************** *
  * pq_data_from_colname() - Retrieve data from a column specified by    *
  *          its name rather than its number.                            *
@@ -1165,11 +1156,17 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
 
     switch (cell->txtsource)
     {
+        GHashTable *cur_row;
+
         case TSRC_STATIC:
             celltext = cell->celltext;
             break;
         case TSRC_DATA:
-            celltext = PQgetvalue (self->pgresult, rownum, cell->cell_col);
+            //celltext = PQgetvalue (self->pgresult, rownum, cell->cell_col);
+            cur_row = g_ptr_array_index (self->pgresult, rownum);
+            celltext = g_hash_table_lookup(g_ptr_array_index (self->pgresult,
+                                                        rownum),
+                                            cell->celltext);
             break;
         case TSRC_NOW:
             //TODO:
@@ -1557,7 +1554,10 @@ render_group(StylePrintTable *self,
     // This loop parses the entire range passed to the group.
     while ((grp_idx < maxrow) && (self->ypos < self->pageheight))
     {
-        char *grptxt = PQgetvalue(self->pgresult, grp_idx, curgrp->grpcol);
+        //char *grptxt = PQgetvalue(self->pgresult, grp_idx, curgrp->grpcol);
+        char *grptxt = g_hash_table_lookup (g_ptr_array_index (self->pgresult,
+                                                grp_idx),
+                                            curgrp->grpcol);
 
         /* Break the main group down into subgroups (or the body)
            Do this by comparing the string in the column defining the group.
@@ -1568,7 +1568,10 @@ render_group(StylePrintTable *self,
         do {
             ++grp_idx;
         } while ((grp_idx < maxrow) && STRMATCH(grptxt,
-                    PQgetvalue (self->pgresult, grp_idx, curgrp->grpcol)));
+                    g_hash_table_lookup (g_ptr_array_index (self->pgresult,
+                                                grp_idx),
+                                            curgrp->grpcol)));
+                    //PQgetvalue (self->pgresult, grp_idx, curgrp->grpcol)));
 
         // Print Group Header, if applicable...
 
@@ -1657,7 +1660,8 @@ render_page(StylePrintTable *self)
     }
     else
     {
-        lastrow = PQntuples (self->pgresult);
+        //lastrow = PQntuples (self->pgresult);
+        lastrow = self->pgresult->len;
     }
 
     if (self->PageHeader)
@@ -1689,7 +1693,9 @@ render_page(StylePrintTable *self)
     // Now we're ready to render the data...
     if (curgrp->grptype == GRPTY_GROUP)
     {
+        fprintf(stderr,"render_page() calling render_group()\n");
         render_group (self, curgrp, lastrow);
+        fprintf(stderr,"render_page() returned from render_group()\n");
     }
     // TODO: Need to check for some other type than GRPTY_BODY???
     // Also, this is wrong, as we don't have a "render_group" function
@@ -1751,7 +1757,8 @@ style_print_table_begin_print (GtkPrintOperation *self,
     STYLE_PRINT_TABLE(self)->PageEndRow = g_ptr_array_new();
 
     while ((STYLE_PRINT_TABLE(self)->datarow) <
-            PQntuples (STYLE_PRINT_TABLE(self)->pgresult))
+            STYLE_PRINT_TABLE(self)->pgresult->len)
+            //PQntuples (STYLE_PRINT_TABLE(self)->pgresult))
     {
         STYLE_PRINT_TABLE(self)->ypos = 0;
         render_page (STYLE_PRINT_TABLE(self));
@@ -1850,7 +1857,7 @@ style_print_table_appendParam (StylePrintTable *self, const gchar *param)
  * style_print_table_from_xmlfile:
  * @tblprnt: The StylePrintTable
  * @win: (nullable): The parent window - NULL if none
- * @qry: query to send which will retrieve the data to print
+ * @data: (element-type GHashTable): The data to process - A GPtrArray of GHashTables
  * @filename: The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is
@@ -1860,7 +1867,7 @@ style_print_table_appendParam (StylePrintTable *self, const gchar *param)
 void
 style_print_table_from_xmlfile (StylePrintTable *self,
                                         GtkWindow *wmain,
-                                        gchar *qry,
+                                        GPtrArray *data,
                                         //GPtrArray *parms,
                                         char *fname)
 {
@@ -1871,25 +1878,18 @@ style_print_table_from_xmlfile (StylePrintTable *self,
     GError *error;
     PGresult *res;
 
-    if ( ! self->conn)
-    {
-        report_error (self,
-                "No connection!  Please connect to database first");
-    }
+//    if ( ! self->conn)
+//    {
+//        report_error (self,
+//                "No connection!  Please connect to database first");
+//    }
 
     if (wmain)
     {
         self->w_main = wmain;
     }
 
-    res = get_data (self, qry);
-
-    if (res == NULL)
-    {
-        return;
-    }
-
-    self->pgresult = res;
+    self->pgresult = data;
 
     if (!self->Page_Setup)
     {
@@ -1928,7 +1928,7 @@ style_print_table_from_xmlfile (StylePrintTable *self,
         render_report (self);
     }
 
-    PQclear (self->pgresult);
+    //PQclear (self->pgresult);
     //free_default_cell();
     //return STYLE_PRINT_TABLE(tbl)->grpHd; // Temporary - for debugging
 }
@@ -1937,7 +1937,7 @@ style_print_table_from_xmlfile (StylePrintTable *self,
  * style_print_table_from_xmlstring:
  * @tp: The #StylePrintTable
  * @w: (nullable): The parent window - NULL if none
- * @qry: The query to send to retrieve the data to print
+ * @data: (element-type GHashTable): The data to process - A GPtrArray of GHashTables
  * @c: Pointer to the string containing the xml formatting
  *
  * Print a table where the definition for the format is contained in an
@@ -1948,32 +1948,18 @@ style_print_table_from_xmlfile (StylePrintTable *self,
 void
 style_print_table_from_xmlstring (  StylePrintTable *self,
                                             GtkWindow *wmain,
-                                            gchar *qry,
-                                            char *xml)
+                                            GPtrArray *data,
+                                                 char *xml)
 {
     GMarkupParseContext *gmp_contxt;
     GError *error;
-    PGresult *res;
-
-    if ( ! self->conn)
-    {
-        report_error (self,
-                "No connection!  Please connect to database first");
-    }
 
     if (wmain)
     {
         self->w_main = wmain;
     }
 
-    res = get_data (self, qry);
-
-    if (res == NULL)
-    {
-        return;
-    }
-
-    self->pgresult = res;
+    self->pgresult = data;
 
     if (!self->Page_Setup)
     {
@@ -1986,7 +1972,6 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
     g_markup_parse_context_parse (gmp_contxt, xml, strlen(xml), &error);
     reset_default_cell ();
     render_report (self);
-    PQclear (self->pgresult);
     free_default_cell();
     //return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
 }
@@ -2053,5 +2038,5 @@ style_print_table_do (StylePrintTable *self, const gchar * qry)
         self->qryParams = NULL;
     }
 
-    PQclear (rslt);     // Simply discard this result
+    //PQclear (rslt);     // Simply discard this result
 }

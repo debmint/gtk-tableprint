@@ -12,5 +12,6 @@ style_print_table_greet
 style_print_table_do
 style_print_table_appendParam
 style_print_table_connect
+StylePrintTable
 </SECTION>
 

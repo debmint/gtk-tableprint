@@ -63,7 +63,7 @@ typedef struct cell_info {
     PangoFontDescription *pangofont;    // Derived from "font" pointer
     int   txtsource;        // Where to get source
     char  *celltext;        // Text to insert into the cell
-    int    cell_col;        // The col # for cell text (only "data" txtsource)
+    //gchar *cell_col;        // The col # for cell text (only "data" txtsource)
     PangoAlignment layoutalign;     // Justification - right/left/center
 } CELLINF, *PCELLINF;
 
@@ -86,7 +86,7 @@ typedef struct grp_info {
     struct grp_info *header;        // Display for group-type groups
     gboolean cells_formatted;        // TRUE if cols have been reformatted 
     GPtrArray *celldefs;            // Pointer to CELLINF array
-    int grpcol;                     // PGresult col number for group text
+    gchar *grpcol;                     // PGresult col number for group text
 } GRPINF, *PGRPINF;
 
 /*typedef struct cell_props {

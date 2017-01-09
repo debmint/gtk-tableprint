@@ -20,35 +20,38 @@ struct _StylePrintTableClass
 <FUNCTION>
 <NAME>style_print_table_new</NAME>
 <RETURNS>StylePrintTable  *</RETURNS>
-void 
+void
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_from_xmlfile</NAME>
 <RETURNS>void  </RETURNS>
-StylePrintTable *tblprnt, GtkWindow *win, gchar *qry, char *filename 
+StylePrintTable *tblprnt, GtkWindow *win, GPtrArray *data, char *filename
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_from_xmlstring</NAME>
 <RETURNS>void  </RETURNS>
-StylePrintTable *tp, GtkWindow *w, gchar *qry, char *c 
+StylePrintTable *tp, GtkWindow *w, GPtrArray *data, char *c
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_greet</NAME>
 <RETURNS>void  </RETURNS>
-       StylePrintTable *self, gchar *ary 
+       StylePrintTable *self, gchar *ary
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_do</NAME>
 <RETURNS>void  </RETURNS>
-         StylePrintTable *self, const gchar *qry 
+         StylePrintTable *self, const gchar *qry
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_appendParam</NAME>
 <RETURNS>void  </RETURNS>
-StylePrintTable *self, const gchar *param 
+StylePrintTable *self, const gchar *param
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_table_connect</NAME>
 <RETURNS>gint  </RETURNS>
-StylePrintTable *self, gchar *dbn 
+StylePrintTable *self, gchar *dbn
 </FUNCTION>
+<STRUCT>
+<NAME>StylePrintTable</NAME>
+</STRUCT>
