@@ -33,7 +33,7 @@ extern "C"
 
 //#include <string.h>
 #include <gtk/gtk.h>
-//#include <glib-object.h>
+#include <glib-object.h>
 #include <glib.h>
 #include <libpq-fe.h>
 
@@ -45,16 +45,50 @@ G_BEGIN_DECLS
 
 //#define TABLE_IS_PRINT_OPERATION(o) (G_TYPE_CHECK_INSTANCE_TYPE((o), TABLE_TYPE_PRINT_OPERATION))
 
-G_DECLARE_FINAL_TYPE(StylePrintTable,style_print_table, STYLE_PRINT, TABLE, GtkPrintOperation)
-
-//typedef struct _TablePrintOperationClass TablePrintOperationClass;
-//typedef struct _GtkStylePrintTable GtkGtkTablePrint
-//typedef struct _TablePrintOperation TablePrintOperation;
+G_DECLARE_DERIVABLE_TYPE(StylePrintTable,style_print_table, STYLE_PRINT, TABLE, GtkPrintOperation)
 
 struct _StylePrintTableClass
 {
     GtkPrintOperationClass parent_class;
+
+
+    void (*from_xmlfile) (StylePrintTable *tblprnt,
+                         GtkWindow *win,
+                         GPtrArray *data,
+                         char *filename);
+
+    void (*from_xmlstring) (StylePrintTable *tp,
+                           GtkWindow *w,
+                           GPtrArray *data,
+                           char *c);
+    /* <private> */
+    
+    /* Padding for future expansion */
+    void (*_gtk_reserved1) (void);
+    void (*_gtk_reserved2) (void);
+    void (*_gtk_reserved3) (void);
+    void (*_gtk_reserved4) (void);
+    void (*_gtk_reserved5) (void);
+    void (*_gtk_reserved6) (void);
+    void (*_gtk_reserved7) (void);
+    void (*_gtk_reserved8) (void);
+    void (*_gtk_reserved9) (void);
+    void (*_gtk_reserved10) (void);
 };
+
+//struct _StylePrintTable
+//{
+//    /*< private >*/
+//    GtkPrintOperation parent_instance;
+//
+//    StylePrintTablePrivate *priv;
+//
+//    gpointer extra_space[12];
+//};
+
+//typedef struct _TablePrintOperationClass TablePrintOperationClass;
+//typedef struct _GtkStylePrintTable GtkGtkTablePrint
+//typedef struct _TablePrintOperation TablePrintOperation;
 
 #ifndef STRMATCH
 #   define STRMATCH(a,b) (strcmp(a, b) == 0)
@@ -139,23 +173,22 @@ enum
     BDY_VBAR  = 1 << 8
 } BodyLines;
 
-StylePrintTable *style_print_table_new(void);
 void style_print_table_from_xmlfile (StylePrintTable *tblprnt,
                                            GtkWindow *win,
                                            GPtrArray *data,
                                                 char *filename);
+
 void style_print_table_from_xmlstring (StylePrintTable *tp,
                                              GtkWindow *w,
                                              GPtrArray *data,
                                                   char *c);
+
 void style_print_table_greet(       StylePrintTable *self,
                                               GPtrArray *ary);
-void style_print_table_do (         StylePrintTable *self,
-                                        const gchar *qry);
-void style_print_table_appendParam (StylePrintTable *self,
-                                        const gchar *param);
-gint style_print_table_connect (StylePrintTable *self,
-                                          gchar *dbn);
+
+StylePrintTable *style_print_table_new(void);
+void style_print_table_set_wmain (StylePrintTable *self, GtkWindow *win);
+GtkWindow * style_print_table_get_wmain (StylePrintTable *self);
 
 //typedef struct tbl_data {
 //} TBLDATA, *PTBLDATA;

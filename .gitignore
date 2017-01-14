@@ -21,12 +21,24 @@ ltmain.sh
 install-sh
 stamp-h1
 *.png
+**/*.swp
 
 html
 StylePrint?1?0?gir
 *.typelib
 StylePrint-doc.top
 StylePrint-doc.bottom
+styletableprint.xml
+styleprintpg.xml
+tree_index.sgml
+object_index.sgml
+api-index*.xml
+docs/reference/xml/bodydef.xml
+docs/reference/xml/celldef.xml
+docs/reference/xml/annotation-glossary.xml
+docs/reference/xml/commondefs.xml
+docs/reference/xml/groupdef.xml
+docs/reference/xml/xmldefs.xml
 docs/reference/StylePrint-overrides.txt
 docs/reference/StylePrint-undeclared.txt
 docs/reference/StylePrint-undocumented.txt

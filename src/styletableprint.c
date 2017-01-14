@@ -79,46 +79,16 @@ see <http://www.gnu.org/licenses/>.
  * because this object handles this setup itself.
  */
 
-/**
- * Constants:
- * @DFLTFONT: Default font name
- * @DFLTSIZE: Default size in points
- *
- */
+typedef struct _StylePrintTablePrivate StylePrintTablePrivate;
 
-#define DFLTFONT "Sans Serif"
-#define DFLTSIZE 10
-
-//GtkPrintOperation *po;
-static void render_report (StylePrintTable*);
-static void start_element_main(GMarkupParseContext *, const gchar *,
-        const gchar **, const gchar **, gpointer, GError **);
-static void end_element_main(GMarkupParseContext *, const gchar *,
-        gpointer, GError **);
-static void prs_err(GMarkupParseContext *, GError *, gpointer);
-
-static void report_error (StylePrintTable *, gchar *);
-static void render_page(StylePrintTable *);
-static void style_print_table_begin_print (GtkPrintOperation *,
-        GtkPrintContext *);
-static void style_print_table_draw_page (GtkPrintOperation *,
-                                GtkPrintContext *, int);
-static void style_print_table_draw_page (GtkPrintOperation *,
-                                GtkPrintContext *, int);
-
-#define CELLPAD_DFLT 10
-
-struct _StylePrintTable
+struct _StylePrintTablePrivate
 {
-    GtkPrintOperation parent_instance;
-
-    //instance variables for subclass
     GtkWindow *w_main;
 
     // Connection Variables
-    PGconn *conn;           // The connection
+    //PGconn *conn;           // The connection
     GPtrArray *pgresult;     // Pointer to the PostGreSQL PGresult
-    GPtrArray *qryParams;   // Array of pointers to Query Params
+    //GPtrArray *qryParams;   // Array of pointers to Query Params
 
     // Headers
     GRPINF *DocHeader;  // The Document Header (header for first page)
@@ -132,6 +102,7 @@ struct _StylePrintTable
     gboolean DoPrint;       // Flag that we want to actually print (pass 2)
     cairo_t *cr;            // The Cairo Print Context
     GtkPrintContext *context;
+    CELLINF *defaultcell;
     PangoLayout *layout;
     ROWPAD *DefaultPadding;
     GSList *elList;
@@ -145,7 +116,44 @@ struct _StylePrintTable
     gint CellHeight;
 };
 
-G_DEFINE_TYPE(StylePrintTable, style_print_table, GTK_TYPE_PRINT_OPERATION)
+/**
+ * Constants:
+ * @DFLTFONT: Default font name
+ * @DFLTSIZE: Default size in points
+ *
+ */
+
+#define DFLTFONT "Sans Serif"
+#define DFLTSIZE 10
+
+//GtkPrintOperation *po;
+static void render_report (StylePrintTable*);
+static void start_element_main (GMarkupParseContext *, const gchar *,
+        const gchar **, const gchar **, gpointer, GError **);
+static void end_element_main (GMarkupParseContext *, const gchar *,
+                             gpointer, GError **);
+static void prs_err (GMarkupParseContext *, GError *, gpointer);
+static void reset_default_cell (StylePrintTable *);
+static void free_default_cell (StylePrintTable *);
+static void set_page_defaults (StylePrintTable *);
+
+static void report_error (StylePrintTable *, gchar *);
+static void render_page (StylePrintTable *);
+static void style_print_table_begin_print (GtkPrintOperation *,
+                                           GtkPrintContext *);
+
+static void style_print_table_draw_page (GtkPrintOperation *,
+                                         GtkPrintContext *,
+                                         int);
+
+static void style_print_table_draw_page (GtkPrintOperation *,
+                                         GtkPrintContext *,
+                                         int);
+
+#define CELLPAD_DFLT 10
+
+G_DEFINE_TYPE_WITH_PRIVATE(StylePrintTable, style_print_table,
+                            GTK_TYPE_PRINT_OPERATION)
 
 // Forward references within this module
 
@@ -156,7 +164,6 @@ G_DEFINE_TYPE(StylePrintTable, style_print_table, GTK_TYPE_PRINT_OPERATION)
 char *GroupElements[] = {"pageheader", "group", "body", NULL};
 gboolean Formatted = FALSE;
 //PangoFontDescription *DefaultPangoFont;
-CELLINF *defaultcell;
 PGRPINF FmtList;    // The formatting tree;
 
 GMarkupParser prsr = {start_element_main, end_element_main, NULL,
@@ -206,29 +213,34 @@ style_print_table_greet (StylePrintTable *self,GPtrArray *ary)
 static void
 style_print_table_init (StylePrintTable *op)
 {
+    StylePrintTablePrivate *priv = style_print_table_get_instance_private (op);
     // initialisation goes here
     ///g_signal_connect (po, "begin-print", G_CALLBACK(begin_print), self);
     //g_signal_connect (po, "draw-page", G_CALLBACK(draw_page), self);
+    /* Should these be set up elsewhere???? */
+    priv->Page_Setup = gtk_page_setup_new();
     gtk_print_operation_set_default_page_setup (GTK_PRINT_OPERATION(op),
-            op->Page_Setup);
-    op->w_main = NULL;
-    op->conn = NULL;
-    op->pgresult = NULL;
-    op->qryParams = NULL;
+            priv->Page_Setup);
+    set_page_defaults (op);
+    priv->w_main = NULL;
+    //priv->conn = NULL;
+    priv->pgresult = NULL;
+    //priv->qryParams = NULL;
 }
 
 static void
 style_print_table_class_init (StylePrintTableClass *class)
 {
-    // virtual function overrides go here
     //GObjectClass *gobject_class = (GObjectClass *) class;
     GtkPrintOperationClass *print_class = (GtkPrintOperationClass *) class;
 
-    // property and signal definitions go here
-    //gobject_class->finalize = style_print_table_finalize;
+    // virtual function overrides go here
     print_class->begin_print = style_print_table_begin_print;
     print_class->draw_page = style_print_table_draw_page;
+    //gobject_class->finalize = style_print_table_finalize;
     //print_class->end_print = style_print_table_end_print;
+
+    // property and signal definitions go here
 }
 
 /* **************************************************************** *
@@ -336,11 +348,15 @@ name_to_layout_align (const char *name)
 static void
 report_error (StylePrintTable *self, char *message)
 {
-    if (self->w_main)
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
+    if (priv->w_main)
     {
         GtkWidget *dlg;
 
-        dlg = gtk_message_dialog_new (self->w_main,
+        dlg = gtk_message_dialog_new (priv->w_main,
                 GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                 GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
                 "%s", message);
@@ -521,15 +537,18 @@ static GRPINF *
 allocate_new_group (StylePrintTable *self, const char **attrib_names,
                     const char **attrib_vals, GRPINF *parent, int grptype)
 {
+    StylePrintTablePrivate *priv;
     int grpidx = 0;
     GRPINF *newgrp = calloc (1, sizeof(GRPINF));
+   
+    priv = style_print_table_get_instance_private (self);
 
     if ((grptype == GRPTY_GROUP) || (grptype == GRPTY_BODY))
     {
-        if (!parent && !self->grpHd)
+        if (!parent && !priv->grpHd)
         {
-            self->grpHd = (GRPINF *)newgrp;
-            newgrp = self->grpHd;
+            priv->grpHd = (GRPINF *)newgrp;
+            newgrp = priv->grpHd;
         }
     }
 
@@ -542,7 +561,7 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     }
     else
     {
-        memcpy (newgrp->font, defaultcell->font, sizeof(FONTINF));
+        memcpy (newgrp->font, priv->defaultcell->font, sizeof(FONTINF));
     }
 
     if (parent && parent->pangofont)
@@ -552,7 +571,7 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     else
     {
         newgrp->pangofont =
-                    pango_font_description_copy (defaultcell->pangofont);
+                    pango_font_description_copy (priv->defaultcell->pangofont);
     }
 
     while (attrib_names[grpidx])
@@ -671,16 +690,21 @@ start_element_main (GMarkupParseContext *context,
                     const gchar  *element_name,
                     const gchar **attrib_names,
                     const gchar **attrib_vals,
-                    gpointer self,
-                    GError **error)
+                       gpointer   myself,
+                         GError **error)
 {
+    StylePrintTablePrivate *priv;
     gpointer newgrp = NULL;
     GRPINF *cur_grp;
     GRPINF *parent = NULL;
+    StylePrintTable *self = STYLE_PRINT_TABLE(myself);
+   
+    priv = style_print_table_get_instance_private (self);
 
-    if (STYLE_PRINT_TABLE(self)->elList)
+
+    if (priv->elList)
     {
-        parent = g_slist_nth(STYLE_PRINT_TABLE(self)->elList, 0)->data;
+        parent = g_slist_nth(priv->elList, 0)->data;
     }
 
     if (STRMATCH(element_name, "cell"))
@@ -688,7 +712,7 @@ start_element_main (GMarkupParseContext *context,
         if (parent)
         {
             newgrp =
-                append_cell_def (STYLE_PRINT_TABLE(self),
+                append_cell_def (self,
                         attrib_names, attrib_vals, (GRPINF *)parent);
         }
         else
@@ -698,17 +722,17 @@ start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "defaultcell"))
     {
-        if (!defaultcell)
+        if (!(priv->defaultcell))
         {
-            defaultcell = calloc (1, sizeof (CELLINF));
+            priv->defaultcell = calloc (1, sizeof (CELLINF));
         }
 
-        add_cell_attribs (defaultcell, attrib_names, attrib_vals);
-        newgrp = defaultcell;
+        add_cell_attribs (priv->defaultcell, attrib_names, attrib_vals);
+        newgrp = priv->defaultcell;
     }
     else if (STRMATCH(element_name, "group"))
     {
-        newgrp = allocate_new_group ( STYLE_PRINT_TABLE(self),
+        newgrp = allocate_new_group ( self,
                 attrib_names, attrib_vals, (GRPINF *)parent, GRPTY_GROUP);
         if (parent)
         {
@@ -716,21 +740,21 @@ start_element_main (GMarkupParseContext *context,
         }
         else
         {
-             STYLE_PRINT_TABLE(self)->grpHd = (GRPINF *)newgrp;
+             priv->grpHd = (GRPINF *)newgrp;
         }
     }
     else if (STRMATCH(element_name, "header"))
     {
         if (parent)
         {
-            newgrp = allocate_new_group (STYLE_PRINT_TABLE(self),
+            newgrp = allocate_new_group (self,
                         attrib_names, attrib_vals, NULL, GRPTY_HEADER);
             ((GRPINF *)parent)->header = newgrp;
         }
     }
     else if (STRMATCH(element_name, "body"))
     {
-        newgrp = allocate_new_group ( STYLE_PRINT_TABLE(self),
+        newgrp = allocate_new_group (self,
                 attrib_names, attrib_vals, (GRPINF *)parent, GRPTY_BODY);
         if (parent)
         {
@@ -738,7 +762,7 @@ start_element_main (GMarkupParseContext *context,
         }
         else
         {
-             STYLE_PRINT_TABLE(self)->grpHd = (GRPINF *)newgrp;
+             priv->grpHd = (GRPINF *)newgrp;
         }
     }
     else if (STRMATCH(element_name, "font"))
@@ -803,14 +827,14 @@ start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "pageheader"))
     {
-        if (! STYLE_PRINT_TABLE(self)->PageHeader)
+        if (! priv->PageHeader)
         {
-             STYLE_PRINT_TABLE(self)->PageHeader =
-                    allocate_new_group ( STYLE_PRINT_TABLE(self),
-                            attrib_names, attrib_vals, NULL, GRPTY_PAGEHEADER);
+             priv->PageHeader =
+                    allocate_new_group ( self, attrib_names, attrib_vals,
+                            NULL, GRPTY_PAGEHEADER);
         }
 
-        newgrp =  STYLE_PRINT_TABLE(self)->PageHeader;
+        newgrp =  priv->PageHeader;
     }
     else if (STRMATCH(element_name, "padding"))
     {
@@ -836,17 +860,14 @@ start_element_main (GMarkupParseContext *context,
     {
         // TODO: if parent, error???
 
-        if (! STYLE_PRINT_TABLE(self)->DefaultPadding)
+        if (! priv->DefaultPadding)
         {
-            STYLE_PRINT_TABLE(self)->DefaultPadding =
-                            calloc (1, sizeof(ROWPAD));
+            priv->DefaultPadding = calloc (1, sizeof(ROWPAD));
         }
 
-        STYLE_PRINT_TABLE(self)->DefaultPadding =
-            set_padding_attribs (
-                    STYLE_PRINT_TABLE(self)->DefaultPadding,
-                                                attrib_names, attrib_vals);
-        newgrp = STYLE_PRINT_TABLE(self)->DefaultPadding;
+        priv->DefaultPadding = set_padding_attribs (
+                    priv->DefaultPadding, attrib_names, attrib_vals);
+        newgrp = priv->DefaultPadding;
     }
     else //if (STRMATCH(element_name, "docheader"))
     {
@@ -855,32 +876,34 @@ start_element_main (GMarkupParseContext *context,
 
     if (newgrp)
     {
-        STYLE_PRINT_TABLE(self)->elList =
-            g_slist_prepend(STYLE_PRINT_TABLE(self)->elList, newgrp);
+        priv->elList = g_slist_prepend(priv->elList, newgrp);
     }
     // Trying to elimintate this feature
     //g_markup_parse_context_push (context, &sub_prs, newgrp);
 }
 
 static void
-end_element_main (GMarkupParseContext *context,
-                    const gchar *element_name,
-                    gpointer self,
-                    GError **error)
+end_element_main (GMarkupParseContext  *context,
+                          const gchar  *element_name,
+                             gpointer   tbl,
+                              GError  **error)
 {
+    StylePrintTable *self = STYLE_PRINT_TABLE(tbl);
+    StylePrintTablePrivate *priv;
+    priv = style_print_table_get_instance_private (self);
+    
 //    if (this_grp)      // If anywhere but in top-level parse
 //    {
     // Pop this item off the List
-    if (STYLE_PRINT_TABLE(self)->elList)
+    if (priv->elList)
     {
-        STYLE_PRINT_TABLE(self)->elList =
-            g_slist_delete_link(STYLE_PRINT_TABLE(self)->elList,
-                    g_slist_nth(STYLE_PRINT_TABLE(self)->elList, 0));
+        priv->elList = g_slist_delete_link (priv->elList,
+                                            g_slist_nth(priv->elList, 0));
     }
         //gpointer ptr = g_markup_parse_context_pop (context);
 //    }
 //    if (STRMATCH(element_name, "group") || STRMATCH(element_name, "body")
-//            || STRMATCH(element_name, "defaultcell")
+//            || STRMATCH(element_name, "priv->defaultcell")
 //            || STRMATCH(element_name, "pageheader"))
 
     // Set the PangoFontDescription
@@ -892,7 +915,7 @@ end_element_main (GMarkupParseContext *context,
 //        if (!(cell->pangofont))
 //        {
 //            cell->pangofont =
-//                pango_font_description_copy (defaultcell->pangofont);
+//                pango_font_description_copy (priv->defaultcell->pangofont);
 //        }
 //
 //        if ((fi = cell->font))
@@ -933,78 +956,85 @@ static void
 set_page_defaults (StylePrintTable *self)
 {
     GtkPaperSize *pap_siz;
+    StylePrintTablePrivate *priv = 
+                style_print_table_get_instance_private (self);
 
-    if (! defaultcell)
+    if (! priv->defaultcell)
     {
-        defaultcell = calloc (1, sizeof(CELLINF));
-        defaultcell->grptype = GRPTY_CELL;
+        priv->defaultcell = calloc (1, sizeof(CELLINF));
+        priv->defaultcell->grptype = GRPTY_CELL;
     }
 
-    if (!defaultcell->pangofont)
+    if (!priv->defaultcell->pangofont)
     {
-        defaultcell->pangofont = pango_font_description_from_string (
+        priv->defaultcell->pangofont = pango_font_description_from_string (
                 "Serif 10");
     }
 
-    if (!defaultcell->font)
+    if (!priv->defaultcell->font)
     {
-        defaultcell->font = calloc (1, sizeof(FONTINF));
+        priv->defaultcell->font = calloc (1, sizeof(FONTINF));
     }
 
-    defaultcell->font->family =
-        (char *)pango_font_description_get_family (defaultcell->pangofont);
-    defaultcell->font->style =
-        pango_font_description_get_style (defaultcell->pangofont);
-    defaultcell->font->size =
-        pango_font_description_get_size (defaultcell->pangofont);
-    defaultcell->font->weight =
-        pango_font_description_get_weight (defaultcell->pangofont);
-    defaultcell->font->variant =
-        pango_font_description_get_variant (defaultcell->pangofont);
-    defaultcell->font->stretch =
-        pango_font_description_get_stretch (defaultcell->pangofont);
+    priv->defaultcell->font->family =
+        (char *)pango_font_description_get_family (priv->defaultcell->pangofont);
+    priv->defaultcell->font->style =
+        pango_font_description_get_style (priv->defaultcell->pangofont);
+    priv->defaultcell->font->size =
+        pango_font_description_get_size (priv->defaultcell->pangofont);
+    priv->defaultcell->font->weight =
+        pango_font_description_get_weight (priv->defaultcell->pangofont);
+    priv->defaultcell->font->variant =
+        pango_font_description_get_variant (priv->defaultcell->pangofont);
+    priv->defaultcell->font->stretch =
+        pango_font_description_get_stretch (priv->defaultcell->pangofont);
 
 
 //    if (!DefaultPangoFont)
 //    {
 //        DefaultPangoFont =
-//            pango_font_description_copy (defaultcell->pangofont);
+//            pango_font_description_copy (priv->defaultcell->pangofont);
 //    }
 
 
-    if (!self->Page_Setup)
+    if (!priv->Page_Setup)
     {
         // We may need to get this by running gtk_print_run_page_setup_dialog()
-        self->Page_Setup = gtk_page_setup_new();
+        priv->Page_Setup = gtk_page_setup_new();
         pap_siz = gtk_paper_size_new (GTK_PAPER_NAME_LETTER);
-        gtk_page_setup_set_paper_size (self->Page_Setup, pap_siz);
+        gtk_page_setup_set_paper_size (priv->Page_Setup, pap_siz);
 //        gtk_paper_size_free (pap_siz);
     }
 }
 
 static void
-free_default_cell()
+free_default_cell (StylePrintTable *self)
 {
-    if (defaultcell->font) {
-        free (defaultcell->font);
+    StylePrintTablePrivate *priv = 
+                style_print_table_get_instance_private (self);
+
+    if (priv->defaultcell->font) {
+        free (priv->defaultcell->font);
     }
 
-    if (defaultcell->pangofont)
+    if (priv->defaultcell->pangofont)
     {
-        pango_font_description_free (defaultcell->pangofont);
+        pango_font_description_free (priv->defaultcell->pangofont);
     }
 
-    free (defaultcell);
-    defaultcell = NULL;
+    free (priv->defaultcell);
+    priv->defaultcell = NULL;
 }
 
 static void
-reset_default_cell ()
+reset_default_cell (StylePrintTable *self)
 {
-    FONTINF *fi = defaultcell->font;
-    PangoFontDescription *pfd = defaultcell->pangofont;
+    StylePrintTablePrivate *priv = 
+                style_print_table_get_instance_private (self);
+    PangoFontDescription *pfd = priv->defaultcell->pangofont;
+    FONTINF *fi = priv->defaultcell->font;
 
-    if (defaultcell->font->family)
+    if (priv->defaultcell->font->family)
     {
         pango_font_description_set_family (pfd, fi->family);
     }
@@ -1059,18 +1089,22 @@ reset_default_cell ()
 static void
 set_col_values (CELLINF *cell, StylePrintTable *self)
 {
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
     // The following is for debugging purposes
-/*    double ps = gtk_page_setup_get_page_width(self->Page_Setup, GTK_UNIT_POINTS);
-    double pc = gtk_print_context_get_width(self->context);
+/*    double ps = gtk_page_setup_get_page_width(priv->Page_Setup, GTK_UNIT_POINTS);
+    double pc = gtk_print_context_get_width(priv->context);
     printf ("\nPage width returned by 'gtk_page_setup_get_page_width' = %f\n",ps);
     printf ("\nPage width returned by 'gtk_print_context_get_width' = %f\n\n",pc);*/
  //   cell->cellwidth =
- //       (cell->percent *  gtk_page_setup_get_page_width(self->Page_Setup,
+ //       (cell->percent *  gtk_page_setup_get_page_width(priv->Page_Setup,
  //               GTK_UNIT_POINTS)/100);
     cell->cellwidth =
-        (cell->percent *  gtk_print_context_get_width(self->context))/100;
-    cell->x = self->xpos;
-    self->xpos += cell->cellwidth;
+        (cell->percent *  gtk_print_context_get_width(priv->context))/100;
+    cell->x = priv->xpos;
+    priv->xpos += cell->cellwidth;
 }
 
 /* ******************************************************************** *
@@ -1083,13 +1117,17 @@ static void
 set_cell_font_description (StylePrintTable * self, CELLINF *cell)
 {
     PFONTINF fi;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
 
     if (! cell->pangofont)
     {
         cell->pangofont =
-                pango_font_description_copy (defaultcell->pangofont);
+                pango_font_description_copy (priv->defaultcell->pangofont);
 
-        if (!defaultcell->pangofont)
+        if (! (priv->defaultcell->pangofont))
         {
             report_error (self,
                     "Failed to create Pango Font Description for Cell");
@@ -1148,6 +1186,10 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
     int CellHeight = 0;
     PangoRectangle log_rect;
     gboolean deletecelltext = FALSE;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
 
     if (!cell->pangofont)
     {
@@ -1156,28 +1198,28 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
 
     switch (cell->txtsource)
     {
-        GHashTable *cur_row;
+        //GHashTable *cur_row;
 
         case TSRC_STATIC:
             celltext = cell->celltext;
             break;
         case TSRC_DATA:
-            //celltext = PQgetvalue (self->pgresult, rownum, cell->cell_col);
-            cur_row = g_ptr_array_index (self->pgresult, rownum);
-            celltext = g_hash_table_lookup(g_ptr_array_index (self->pgresult,
-                                                        rownum),
-                                            cell->celltext);
+            //celltext = PQgetvalue (priv->pgresult, rownum, cell->cell_col);
+            //cur_row = g_ptr_array_index (priv->pgresult, rownum);
+            celltext = g_hash_table_lookup(g_ptr_array_index (priv->pgresult,
+                                                            rownum),
+                                                            cell->celltext);
             break;
         case TSRC_NOW:
             //TODO:
             break;
         case TSRC_PAGE:
-            celltext = g_strdup_printf ("Page %d", self->pageno + 1);
+            celltext = g_strdup_printf ("Page %d", priv->pageno + 1);
             deletecelltext = TRUE;
             break;
         case TSRC_PAGEOF:
-            celltext = g_strdup_printf ("Page %d of %d", self->pageno + 1,
-                                                            self->TotPages);
+            celltext = g_strdup_printf ("Page %d of %d", priv->pageno + 1,
+                                                            priv->TotPages);
             deletecelltext = TRUE;
             break;
         case TSRC_PRINTF:
@@ -1188,7 +1230,7 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
     if (celltext && strlen (celltext))
     {
         PangoLayout *layout =
-                    gtk_print_context_create_pango_layout (self->context);
+                    gtk_print_context_create_pango_layout (priv->context);
         pango_layout_set_font_description (layout, cell->pangofont);
         pango_layout_set_width (layout,
                 (cell->cellwidth - cell->padleft - cell->padright) *
@@ -1198,10 +1240,10 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
         pango_layout_get_extents (layout, NULL, &log_rect);
         CellHeight = log_rect.height;
 
-        if (self->DoPrint)
+        if (priv->DoPrint)
         {
-            cairo_move_to (self->cr, cell->x + cell->padleft, rowtop);
-            pango_cairo_show_layout (self->cr, layout);
+            cairo_move_to (priv->cr, cell->x + cell->padleft, rowtop);
+            pango_cairo_show_layout (priv->cr, layout);
         }
 
         g_object_unref (layout);
@@ -1226,13 +1268,17 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
 double
 hline (StylePrintTable *self, double ypos, double weight)
 {
-    if (self->DoPrint)
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
+    if (priv->DoPrint)
     {
-        cairo_set_line_width (self->cr, weight);
-        cairo_move_to (self->cr, 0, ypos);
-        cairo_rel_line_to (self->cr,
-                            gtk_print_context_get_width (self->context), 0);
-        cairo_stroke (self->cr);
+        cairo_set_line_width (priv->cr, weight);
+        cairo_move_to (priv->cr, 0, ypos);
+        cairo_rel_line_to (priv->cr,
+                            gtk_print_context_get_width (priv->context), 0);
+        cairo_stroke (priv->cr);
     }
 
     return 2;
@@ -1305,23 +1351,25 @@ render_row (StylePrintTable *self,
             int borderstyle,
             int rownum)
 {
+    StylePrintTablePrivate *priv =
+                    style_print_table_get_instance_private (self);
     int colnum;
-    double rowtop = self->ypos;
     int MaxHeight = 0;
+    double rowtop = priv->ypos;
 
     if (padding)
     {
         if (padding->top == -1)
         {
-            padding->top = self->DefaultPadding->top;
+            padding->top = priv->DefaultPadding->top;
         }
 
         rowtop += padding->top;
     }
 
-/*    if (rowtop >= self->pageheight)
+/*    if (rowtop >= priv->pageheight)
     {
-        return rowtop - self->ypos;
+        return rowtop - priv->ypos;
     }*/
 
     // Upper line for row
@@ -1344,19 +1392,19 @@ render_row (StylePrintTable *self,
     {
         int idx;
 
-        if (self->DoPrint)
+        if (priv->DoPrint)
         {
             for (idx = 1; idx < coldefs->len; idx++)
             {
-                if (self->DoPrint)
+                if (priv->DoPrint)
                 {
-                    //int rmargin = gtk_print_context_get_width (self->context);
+                    //int rmargin = gtk_print_context_get_width (priv->context);
 
-                    cairo_set_line_width (self->cr, 2.0);
-                    cairo_move_to (self->cr,
+                    cairo_set_line_width (priv->cr, 2.0);
+                    cairo_move_to (priv->cr,
                             ((CELLINF *)(coldefs->pdata[idx]))->x, rowtop);
-                    cairo_rel_line_to (self->cr, 0, MaxHeight);
-                    cairo_stroke (self->cr);
+                    cairo_rel_line_to (priv->cr, 0, MaxHeight);
+                    cairo_stroke (priv->cr);
                 }
             }
         }
@@ -1368,13 +1416,13 @@ render_row (StylePrintTable *self,
     {
         if (padding->bottom == -1)
         {
-            padding->bottom = self->DefaultPadding->bottom;
+            padding->bottom = priv->DefaultPadding->bottom;
         }
 
         rowtop += padding->bottom;
     }
 
-    return rowtop - self->ypos;
+    return rowtop - priv->ypos;
 }
 
 /* ******************************************************************** *
@@ -1402,8 +1450,12 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
         int cur_row,                // The first row to print
         int end_row)                // The last row to print + 1
 {
+    StylePrintTablePrivate *priv;
+    priv = style_print_table_get_instance_private (self);
     int cur_idx = cur_row;
-    double max_y = self->pageheight - self->textheight;
+    double max_y = priv->pageheight - priv->textheight;
+   
+
 
     // If no cell defs, return...
     if (!col_defs)
@@ -1414,23 +1466,23 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
     // Render HLINE above first line, if applicable
     if (borderstyle & BDY_HLINE)
     {
-        double line_ht = hline (self, self->ypos, 1.0);
-        self->ypos += line_ht;
+        double line_ht = hline (self, priv->ypos, 1.0);
+        priv->ypos += line_ht;
         max_y -= line_ht * 2;
     }
 
     for (cur_idx = cur_row; cur_idx < end_row; cur_idx++)
     {
-        (self->ypos) += render_row (self, col_defs, padding,
+        (priv->ypos) += render_row (self, col_defs, padding,
                             borderstyle, cur_idx);
 
         // Render HLINE below each line, if applicable
         if (borderstyle & BDY_HLINE)
         {
-            self->ypos += hline (self, self->ypos, 1.0);
+            priv->ypos += hline (self, priv->ypos, 1.0);
         }
 
-        if (self->ypos >= max_y)
+        if (priv->ypos >= max_y)
         {
             ++cur_idx;      // Position to next data row for return
             return cur_idx;
@@ -1443,9 +1495,13 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
 static void
 render_header (StylePrintTable *self, GRPINF *curhdr)
 {
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
     if (curhdr->pointsabove)
     {
-        self->ypos += curhdr->pointsabove;
+        priv->ypos += curhdr->pointsabove;
     }
 
     if (curhdr->celldefs)
@@ -1453,20 +1509,20 @@ render_header (StylePrintTable *self, GRPINF *curhdr)
         if (!curhdr->cells_formatted)
         {
             //TODO: We may need to add in Left Margin
-            self->xpos = 0;
+            priv->xpos = 0;
             g_ptr_array_foreach (curhdr->celldefs,
                     (GFunc)set_col_values, self);
             curhdr->cells_formatted = TRUE;
         }
 
         render_row_grp (self, curhdr->celldefs,
-                            curhdr->padding, curhdr->borderstyle, self->layout,
-                            self->datarow, self->datarow + 1);
+                            curhdr->padding, curhdr->borderstyle, priv->layout,
+                            priv->datarow, priv->datarow + 1);
     }
 
     if (curhdr->pointsbelow)
     {
-        self->ypos += curhdr->pointsbelow;
+        priv->ypos += curhdr->pointsbelow;
     }
 }
 
@@ -1487,24 +1543,28 @@ render_body (StylePrintTable *self,
                 GRPINF *bdy,
                 int maxrow)
 {
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
     if (bdy->celldefs)
     {
         if (!bdy->cells_formatted)
         {
             //TODO: We may need to add in Left Margin
-            self->xpos = 0;
+            priv->xpos = 0;
             g_ptr_array_foreach (bdy->celldefs, (GFunc)set_col_values,
                                 self);
             bdy->cells_formatted = TRUE;
         }
     }
 
-    self->datarow = render_row_grp (self, bdy->celldefs,
+    priv->datarow = render_row_grp (self, bdy->celldefs,
                 bdy->padding, bdy->borderstyle,
-                //self->formatting->body,
-                //self->formatting,
-                self->layout,
-                self->datarow, maxrow
+                //priv->formatting->body,
+                //priv->formatting,
+                priv->layout,
+                priv->datarow, maxrow
                 );
 }
 
@@ -1522,14 +1582,17 @@ render_group(StylePrintTable *self,
                 GRPINF *curgrp,
                 int maxrow)
 {
-    int grp_idx = self->datarow;
     //double y_pos = self->ypos;
     //int grp_y = self->ypos,
     int    grp_top;
     //GRPINF *cg = curgrp;
     //PangoLayout *layout = set_layout(self, render_params, self->layout);
+    StylePrintTablePrivate *priv;
+    priv = style_print_table_get_instance_private (self);
+    int grp_idx = priv->datarow;
 
-    grp_top = self->ypos;
+
+    grp_top = priv->ypos;
 
     // Try to avoid leaving hanging group headers at the bottom of the
     // page with no body data...
@@ -1541,21 +1604,21 @@ render_group(StylePrintTable *self,
 
 /*    while (cg->grpchild->grptype == GRPTY_GROUP)
     {
-        //grp_y += cg->pointsabove + self->textheight + cg->pointsbelow;
-        grp_y += self->textheight;
+        //grp_y += cg->pointsabove + priv->textheight + cg->pointsbelow;
+        grp_y += priv->textheight;
         cg = cg->grpchild;
     }
 
-    if (grp_y + (self->textheight * 2) >= self->pageheight)
+    if (grp_y + (priv->textheight * 2) >= priv->pageheight)
     {
-        return self->datarow;
+        return priv->datarow;
     }*/
 
     // This loop parses the entire range passed to the group.
-    while ((grp_idx < maxrow) && (self->ypos < self->pageheight))
+    while ((grp_idx < maxrow) && (priv->ypos < priv->pageheight))
     {
-        //char *grptxt = PQgetvalue(self->pgresult, grp_idx, curgrp->grpcol);
-        char *grptxt = g_hash_table_lookup (g_ptr_array_index (self->pgresult,
+        //char *grptxt = PQgetvalue(priv->pgresult, grp_idx, curgrp->grpcol);
+        char *grptxt = g_hash_table_lookup (g_ptr_array_index (priv->pgresult,
                                                 grp_idx),
                                             curgrp->grpcol);
 
@@ -1568,16 +1631,16 @@ render_group(StylePrintTable *self,
         do {
             ++grp_idx;
         } while ((grp_idx < maxrow) && STRMATCH(grptxt,
-                    g_hash_table_lookup (g_ptr_array_index (self->pgresult,
+                    g_hash_table_lookup (g_ptr_array_index (priv->pgresult,
                                                 grp_idx),
                                             curgrp->grpcol)));
-                    //PQgetvalue (self->pgresult, grp_idx, curgrp->grpcol)));
+                    //PQgetvalue (priv->pgresult, grp_idx, curgrp->grpcol)));
 
         // Print Group Header, if applicable...
 
         if (curgrp->pointsabove)
         {
-            self->ypos += curgrp->pointsabove;
+            priv->ypos += curgrp->pointsabove;
         }
 
         if (curgrp->header)
@@ -1585,7 +1648,7 @@ render_group(StylePrintTable *self,
             render_header (self, curgrp->header);
         }       // if (curgrp->header)
 
-        //if(render_params->pts_above){self->ypos += render_params->pts_above;}
+        //if(render_params->pts_above){priv->ypos += render_params->pts_above;}
         // Possibly add group-header...
 
         // Now render the current range of data.  It will be
@@ -1612,32 +1675,32 @@ render_group(StylePrintTable *self,
         }
 
         // Render footers here???
-        if (self->DoPrint)
+        if (priv->DoPrint)
         {
             if (curgrp->borderstyle & (SINGLEBOX | DBLBOX))
             {
-                cairo_set_line_width (self->cr, 4.0);
-                cairo_rectangle (self->cr, 0, grp_top,
-                                   gtk_print_context_get_width (self->context),
-                                   self->ypos - grp_top); 
-                cairo_stroke (self->cr);
+                cairo_set_line_width (priv->cr, 4.0);
+                cairo_rectangle (priv->cr, 0, grp_top,
+                                   gtk_print_context_get_width (priv->context),
+                                   priv->ypos - grp_top); 
+                cairo_stroke (priv->cr);
             }
 
             if (curgrp->borderstyle & DBLBOX)
             {
-                cairo_set_line_width (self->cr, 2.0);
-                cairo_rectangle (self->cr, 16, grp_top + 16,
-                            gtk_print_context_get_width (self->context) - 32,
-                            self->ypos - grp_top - 32); 
-                cairo_stroke (self->cr);
+                cairo_set_line_width (priv->cr, 2.0);
+                cairo_rectangle (priv->cr, 16, grp_top + 16,
+                            gtk_print_context_get_width (priv->context) - 32,
+                            priv->ypos - grp_top - 32); 
+                cairo_stroke (priv->cr);
             }
         }
 
         if (curgrp->pointsbelow)
         {
-            self->ypos += curgrp->pointsbelow;
+            priv->ypos += curgrp->pointsbelow;
         }
-        if (self->ypos >= self->pageheight)
+        if (priv->ypos >= priv->pageheight)
         {
             break;
         }
@@ -1651,51 +1714,53 @@ render_page(StylePrintTable *self)
 {
     GRPINF *curgrp;
     int lastrow;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
 
-    self->ypos = 0;
 
-    if (self->DoPrint)
+    priv->ypos = 0;
+
+    if (priv->DoPrint)
     {
-        lastrow = (int)g_ptr_array_index (self->PageEndRow, self->pageno);
+        lastrow = (int)g_ptr_array_index (priv->PageEndRow, priv->pageno);
     }
     else
     {
-        //lastrow = PQntuples (self->pgresult);
-        lastrow = self->pgresult->len;
+        //lastrow = PQntuples (priv->pgresult);
+        lastrow = priv->pgresult->len;
     }
 
-    if (self->PageHeader)
+    if (priv->PageHeader)
     {
-        if (self->PageHeader->celldefs)
+        if (priv->PageHeader->celldefs)
         {
-            if (!self->PageHeader->cells_formatted)
+            if (!priv->PageHeader->cells_formatted)
             {
                 //TODO: We may need to add in Left Margin
-                self->xpos = 0;
-                g_ptr_array_foreach(self->PageHeader->celldefs,
+                priv->xpos = 0;
+                g_ptr_array_foreach(priv->PageHeader->celldefs,
                         (GFunc)set_col_values, self);
-                self->PageHeader->cells_formatted = TRUE;
+                priv->PageHeader->cells_formatted = TRUE;
             }
 
-            render_row_grp (self, self->PageHeader->celldefs, NULL,
-                            0, self->layout, self->datarow, self->datarow + 1);
+            render_row_grp (self, priv->PageHeader->celldefs, NULL,
+                            0, priv->layout, priv->datarow, priv->datarow + 1);
         }
     }
-    else if (!self->pageno)       // If first page, print Docheader if present
+    else if (!priv->pageno)       // If first page, print Docheader if present
     {
-        if (self->DocHeader)
+        if (priv->DocHeader)
         {
         }
     }
 
-    curgrp = self->grpHd;
+    curgrp = priv->grpHd;
 
     // Now we're ready to render the data...
     if (curgrp->grptype == GRPTY_GROUP)
     {
-        fprintf(stderr,"render_page() calling render_group()\n");
         render_group (self, curgrp, lastrow);
-        fprintf(stderr,"render_page() returned from render_group()\n");
     }
     // TODO: Need to check for some other type than GRPTY_BODY???
     // Also, this is wrong, as we don't have a "render_group" function
@@ -1706,20 +1771,22 @@ render_page(StylePrintTable *self)
 }
 
 static void
-style_print_table_draw_page (GtkPrintOperation *operation,
+style_print_table_draw_page (GtkPrintOperation *op,
                                 GtkPrintContext *context, int page_nr)
 {
-    STYLE_PRINT_TABLE(operation)->pageno = page_nr;
-    STYLE_PRINT_TABLE(operation)->context = context;
-    STYLE_PRINT_TABLE(operation)->pageheight =
-                    gtk_print_context_get_height (STYLE_PRINT_TABLE(operation)->context);
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (STYLE_PRINT_TABLE(op));
+
+    priv->pageno = page_nr;
+    priv->context = context;
+    priv->pageheight =
+                    gtk_print_context_get_height (priv->context);
 //    gtk_print_STYLE_PRINT_TABLE(operation)_set_unit (operation, GTK_UNIT_POINTS);
-    STYLE_PRINT_TABLE(operation)->cr =
-                    gtk_print_context_get_cairo_context (context);
-    STYLE_PRINT_TABLE(operation)->layout =
-                    gtk_print_context_create_pango_layout (context);
-    render_page (STYLE_PRINT_TABLE(operation));
-    g_object_unref (STYLE_PRINT_TABLE(operation)->layout);
+    priv->cr = gtk_print_context_get_cairo_context (context);
+    priv->layout = gtk_print_context_create_pango_layout (context);
+    render_page (STYLE_PRINT_TABLE(op));
+    g_object_unref (priv->layout);
 }
 
 /* ************************************************************************ *
@@ -1729,51 +1796,52 @@ style_print_table_draw_page (GtkPrintOperation *operation,
  * ************************************************************************ */
 
 static void
-style_print_table_begin_print (GtkPrintOperation *self,
+style_print_table_begin_print (GtkPrintOperation *po,
         GtkPrintContext *context)
 {
     PangoLayout *lo;
     PangoRectangle log_rect;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (STYLE_PRINT_TABLE(po));
 
     //int firstrow = 0;   // First datarow for the page;
-    STYLE_PRINT_TABLE(self)->datarow = 0;
-    STYLE_PRINT_TABLE(self)->pageno = 0;
-    STYLE_PRINT_TABLE(self)->context = context;
-    STYLE_PRINT_TABLE(self)->pageheight =
-                gtk_print_context_get_height (STYLE_PRINT_TABLE(self)->context);
-    STYLE_PRINT_TABLE(self)->TotPages = 0;
-    STYLE_PRINT_TABLE(self)->DoPrint = FALSE;
+    priv->datarow = 0;
+    priv->pageno = 0;
+    priv->context = context;
+    priv->pageheight = gtk_print_context_get_height (priv->context);
+    priv->TotPages = 0;
+    priv->DoPrint = FALSE;
 //    gtk_print_operation_set_unit (operation, GTK_UNIT_POINTS);
-    STYLE_PRINT_TABLE(self)->layout = gtk_print_context_create_pango_layout (context);
+    priv->layout = gtk_print_context_create_pango_layout (context);
 
-    lo = pango_layout_copy (STYLE_PRINT_TABLE(self)->layout);
-    pango_layout_set_font_description (lo, defaultcell->pangofont);
-    pango_layout_set_width (lo, gtk_print_context_get_width (STYLE_PRINT_TABLE(self)->context));
+    lo = pango_layout_copy (priv->layout);
+    pango_layout_set_font_description (lo, priv->defaultcell->pangofont);
+    pango_layout_set_width (lo, gtk_print_context_get_width (priv->context));
     pango_layout_set_text (lo, "Ty", -1);
     pango_layout_get_extents (lo, NULL, &log_rect);
-    STYLE_PRINT_TABLE(self)->textheight = log_rect.height/PANGO_SCALE;
+    priv->textheight = log_rect.height/PANGO_SCALE;
     g_object_unref (lo);
 
-    STYLE_PRINT_TABLE(self)->PageEndRow = g_ptr_array_new();
+    priv->PageEndRow = g_ptr_array_new();
 
-    while ((STYLE_PRINT_TABLE(self)->datarow) <
-            STYLE_PRINT_TABLE(self)->pgresult->len)
-            //PQntuples (STYLE_PRINT_TABLE(self)->pgresult))
+    while ((priv->datarow) < priv->pgresult->len)
+            //PQntuples (STYLE_PRINT_TABLE(priv)->pgresult))
     {
-        STYLE_PRINT_TABLE(self)->ypos = 0;
-        render_page (STYLE_PRINT_TABLE(self));
-        g_ptr_array_add (STYLE_PRINT_TABLE(self)->PageEndRow,
-                (gpointer)(STYLE_PRINT_TABLE(self)->datarow));
-        ++(STYLE_PRINT_TABLE(self)->TotPages);
+        priv->ypos = 0;
+        render_page (STYLE_PRINT_TABLE(po));
+        g_ptr_array_add (priv->PageEndRow,
+                (gpointer)(priv->datarow));
+        ++(priv->TotPages);
     }
 
-    gtk_print_operation_set_n_pages (self,
-            STYLE_PRINT_TABLE(STYLE_PRINT_TABLE(self))->TotPages ? STYLE_PRINT_TABLE(self)->TotPages : 1);
+    gtk_print_operation_set_n_pages (po,
+            priv->TotPages ? priv->TotPages : 1);
     // Re-initialize Global variables
-    g_object_unref (STYLE_PRINT_TABLE(self)->layout);
-    STYLE_PRINT_TABLE(self)->DoPrint = TRUE;
-    STYLE_PRINT_TABLE(self)->datarow = 0;
-    STYLE_PRINT_TABLE(self)->pageno = 0;
+    g_object_unref (priv->layout);
+    priv->DoPrint = TRUE;
+    priv->datarow = 0;
+    priv->pageno = 0;
 }
 
 /*
@@ -1788,69 +1856,16 @@ static void
 render_report (StylePrintTable *self)
 {
     GError *g_err;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
 
     gtk_print_operation_run (GTK_PRINT_OPERATION(self),
-            GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, self->w_main, &g_err);
+            GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, priv->w_main, &g_err);
     
     // Now free up everything that has been allocated...
-    g_ptr_array_free (STYLE_PRINT_TABLE(self)->PageEndRow, TRUE);
-}
-
-/**
- * style_print_table_connect:
- * @self: The #StylePrintTable *
- * @dbn: The connection string set up in the way it is sent to the database
- *(see PostgreSQL documentation for details on format)
- *
- * Returns: 1 on success, 0 on failure.
- *
- * Establishes a connection to the database.  This must be done before any
- * queries or commands are sent to the database.
- *
- * Free the string upon return if need be.
- *
- */
-
-gint
-style_print_table_connect (StylePrintTable *self, gchar *dbn)
-{
-
-    self->conn = PQconnectdb(dbn);
-
-    if (PQstatus(self->conn) != CONNECTION_OK)
-    {
-        report_error (self, "Failed to connect to db\n");
-        self->conn = NULL;
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
- * style_print_table_appendParam:
- * @self: The #StylePrintTable *
- * @param: The parameter value to add.
- *
- * Appends a parameter onto the list of parameters for the upcoming query.
- * The query refers to these parameters with the nomenclature of '$1', '$2',
- * etc.
- *
- * The order is important!  The parameters must appear in the list in the
- * order in which they are referred to in the query.
- *
- * If the values need to be freed, do this after the query is executed.
- */
-
-void
-style_print_table_appendParam (StylePrintTable *self, const gchar *param)
-{
-    if ( ! self->qryParams)
-    {
-        self->qryParams = g_ptr_array_new();
-    }
-
-    g_ptr_array_add (self->qryParams, (gpointer)param);
+    g_ptr_array_free (priv->PageEndRow, TRUE);
 }
 
 /**
@@ -1876,25 +1891,29 @@ style_print_table_from_xmlfile (StylePrintTable *self,
     int rdcount;
     GMarkupParseContext *gmp_contxt;
     GError *error;
-    PGresult *res;
+    //PGresult *res;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
 
-//    if ( ! self->conn)
+    priv->xpos = 1949;
+//    if ( ! priv->conn)
 //    {
-//        report_error (self,
+//        report_error (priv,
 //                "No connection!  Please connect to database first");
 //    }
 
     if (wmain)
     {
-        self->w_main = wmain;
+        priv->w_main = wmain;
     }
 
-    self->pgresult = data;
+    priv->pgresult = data;
 
-    if (!self->Page_Setup)
-    {
-        set_page_defaults (self);
-    }
+//    if (!priv->Page_Setup)
+//    {
+//        set_page_defaults (self);
+//    }
 
     if ( ! (fp = fopen (fname, "rb")))
     {
@@ -1921,14 +1940,14 @@ style_print_table_from_xmlfile (StylePrintTable *self,
     }
 
     fclose (fp);
-    reset_default_cell ();
+    reset_default_cell (self);
 
     if ( ! error)
     {
         render_report (self);
     }
 
-    //PQclear (self->pgresult);
+    //PQclear (priv->pgresult);
     //free_default_cell();
     //return STYLE_PRINT_TABLE(tbl)->grpHd; // Temporary - for debugging
 }
@@ -1953,26 +1972,30 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
 {
     GMarkupParseContext *gmp_contxt;
     GError *error;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
+
 
     if (wmain)
     {
-        self->w_main = wmain;
+        priv->w_main = wmain;
     }
 
-    self->pgresult = data;
+    priv->pgresult = data;
 
-    if (!self->Page_Setup)
-    {
-        set_page_defaults (self);
-    }
+//    if (!priv->Page_Setup)
+//    {
+//        set_page_defaults (self);
+//    }
 
     gmp_contxt =
         g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
-                self, NULL);
+                priv, NULL);
     g_markup_parse_context_parse (gmp_contxt, xml, strlen(xml), &error);
-    reset_default_cell ();
+    reset_default_cell (self);
     render_report (self);
-    free_default_cell();
+    free_default_cell (self);
     //return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
 }
 
@@ -1992,51 +2015,36 @@ style_print_table_new (void)
 }
 
 /**
- * style_print_table_do:
- * @self: The #StylePrintTable *
- * @qry: The query to execute
- * 
- * Execute a non-data-returning query on the database
- * If parameters are used, they must be previously set
+ * style_print_table_set_wmain:
+ * @self: The #StylePrintTable instance
+ * @win: The toplevel window
+ *
+ * Sets the top level window.  Needed for declaring the parent window
+ * for dialogs, etc.
  */
 
 void
-style_print_table_do (StylePrintTable *self, const gchar * qry)
+style_print_table_set_wmain (StylePrintTable *self, GtkWindow *win)
 {
-    PGresult *rslt;
+    StylePrintTablePrivate *priv =
+                style_print_table_get_instance_private (self);
+    priv->w_main = win;
+}
 
-    if ( ! self->conn)
-    {
-        report_error (self,  "No connection has been established");
-        return;
-    }
+/**
+ * style_print_table_get_wmain:
+ * @self: the #StylePrintTable instance
+ * returns: (transfer none): The #GtkWindow that is declared as top-level window.
+ *
+ * Get the top-level window which is useful as the parent window for
+ * dialogs, etc.
+ */
 
-    if (self->qryParams == NULL)
-    {
-        rslt = PQexec (self->conn, qry);
-    }
-    else
-    {
-        rslt = PQexecParams(self->conn,
-                    qry,
-                    self->qryParams->len,
-                    NULL,       // paramTypes not used
-                    (const gchar **)self->qryParams->pdata,// Array of params
-                    NULL,       // list of parameter lengths -ignore
-                    NULL,
-                    0);         // returned formats - make all text
-    }
-
-    if (PQresultStatus (rslt) != PGRES_COMMAND_OK)  
-    {
-        report_error (self, PQresultErrorMessage(rslt));
-    }
-
-    if (self->qryParams)
-    {
-        g_ptr_array_free (self->qryParams, FALSE);
-        self->qryParams = NULL;
-    }
-
-    //PQclear (rslt);     // Simply discard this result
+GtkWindow *
+style_print_table_get_wmain (StylePrintTable *self)
+{
+    StylePrintTablePrivate *priv =
+            style_print_table_get_instance_private (self);
+    return priv->w_main;
+    //return ((style_print_table_get_instance_private (self))->w_main);
 }
