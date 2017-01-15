@@ -3,6 +3,9 @@
 <TITLE>StylePrintPg</TITLE>
 STYLE_PRINT_TYPE_PG
 StylePrintPgClass
+style_print_pg_new
+style_print_pg_do
+style_print_pg_appendParam
 style_print_pg_from_xmlfile
 style_print_pg_from_xmlstring
 StylePrintPg

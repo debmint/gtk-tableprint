@@ -86,9 +86,7 @@ struct _StylePrintTablePrivate
     GtkWindow *w_main;
 
     // Connection Variables
-    //PGconn *conn;           // The connection
     GPtrArray *pgresult;     // Pointer to the PostGreSQL PGresult
-    //GPtrArray *qryParams;   // Array of pointers to Query Params
 
     // Headers
     GRPINF *DocHeader;  // The Document Header (header for first page)
@@ -155,12 +153,6 @@ static void style_print_table_draw_page (GtkPrintOperation *,
 G_DEFINE_TYPE_WITH_PRIVATE(StylePrintTable, style_print_table,
                             GTK_TYPE_PRINT_OPERATION)
 
-// Forward references within this module
-
-//static void setup_formatting(GHashTable *);
-//static void alt_cell_end_element(GMarkupParseContext *, const gchar *,
-//        gpointer, GError **);
-
 char *GroupElements[] = {"pageheader", "group", "body", NULL};
 gboolean Formatted = FALSE;
 //PangoFontDescription *DefaultPangoFont;
@@ -182,7 +174,6 @@ void
 arylist (GHashTable *ht, gpointer udat)
 {
     gchar *val;
-    //g_hash_table_foreach(ht,(GHFunc)htlist,NULL);
     val = (gchar *)g_hash_table_lookup(ht,"who");
     if (val)
     {
@@ -215,15 +206,13 @@ style_print_table_init (StylePrintTable *op)
 {
     StylePrintTablePrivate *priv = style_print_table_get_instance_private (op);
     // initialisation goes here
-    ///g_signal_connect (po, "begin-print", G_CALLBACK(begin_print), self);
-    //g_signal_connect (po, "draw-page", G_CALLBACK(draw_page), self);
+
     /* Should these be set up elsewhere???? */
     priv->Page_Setup = gtk_page_setup_new();
     gtk_print_operation_set_default_page_setup (GTK_PRINT_OPERATION(op),
             priv->Page_Setup);
     set_page_defaults (op);
     priv->w_main = NULL;
-    //priv->conn = NULL;
     priv->pgresult = NULL;
     //priv->qryParams = NULL;
 }
@@ -476,43 +465,6 @@ append_cell_def (StylePrintTable *self, const gchar **attrib_names,
 //        {
 //            mycell->cell_col = PQfnumber (self->pgresult, mycell->celltext);
 //
-//            if (mycell->cell_col == -1)
-//            {
-//                if (self->w_main)
-//                {
-//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-//                            GTK_DIALOG_DESTROY_WITH_PARENT,
-//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-//                            "Error! '%s' is not a valid column name",
-//                            mycell->celltext);
-//                    gtk_dialog_run(GTK_DIALOG(dlg));
-//                    gtk_widget_destroy(dlg);
-//                }
-//                else
-//                {
-//                    fprintf (stderr,"Error: '%s' is not a valid column\n",
-//                            mycell->celltext);
-//                }
-//            }
-//
-//            if (PQresultStatus (self->pgresult) != PGRES_TUPLES_OK)
-//            {
-//                if (self->w_main)
-//                {
-//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-//                            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
-//                            PQresultErrorMessage (self->pgresult));
-//                    gtk_dialog_run (GTK_DIALOG(dlg));
-//                    gtk_widget_destroy (dlg);
-//                }
-//                else
-//                {
-//                    fprintf (stderr, "Cannot determine column # for: %s\n",
-//                                PQresultErrorMessage (self->pgresult));
-//                }
-//
-//            }
 //        }
 //    }
 
@@ -578,28 +530,8 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     {
         if (STRMATCH(attrib_names[grpidx], "groupsource"))
         {
-            //newgrp->grpcol = PQfnumber (self->pgresult,
-            //                                attrib_vals[grpidx]);
             newgrp->grpcol = g_strdup (attrib_vals[grpidx]);
 
-//            if (newgrp->grpcol == -1)
-//            {
-//                if (self->w_main)
-//                {
-//                    GtkWidget *dlg = gtk_message_dialog_new (self->w_main,
-//                            GTK_DIALOG_DESTROY_WITH_PARENT,
-//                            GTK_MESSAGE_WARNING, GTK_BUTTONS_CLOSE,
-//                            "Error! '%s' is not a valid column name",
-//                            attrib_vals[grpidx]);
-//                    gtk_dialog_run(GTK_DIALOG(dlg));
-//                    gtk_widget_destroy(dlg);
-//                }
-//                else
-//                {
-//                    fprintf (stderr, "Error: '%s' is not a valid column\n",
-//                            attrib_vals[grpidx]);
-//                }
-//            }
         }
         else if (STRMATCH(attrib_names[grpidx], "pointsabove"))
         {
@@ -632,6 +564,7 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
                 newgrp->borderstyle = DBLBOX;
             }
         }
+
         // We may wish to move this into the body allocation segment
         else if (STRMATCH(attrib_names[grpidx], "cellborder"))
         {
@@ -1066,17 +999,6 @@ reset_default_cell (StylePrintTable *self)
 }
 
 /* ******************************************************************** *
- * pq_data_from_colname() - Retrieve data from a column specified by    *
- *          its name rather than its number.                            *
- * ******************************************************************** */
-
-//static char *
-//pq_data_from_colname (PGresult *res, int row, char *colname)
-//{
-//    return PQgetvalue (res, row, PQfnumber(res, colname));
-//}
-
-/* ******************************************************************** *
  * set_col_values() - Set the cellwidth and left position for the cell  *
  *      This is called on the first encounter with the cell.  It is not *
  *      called in the initialization routine since the Page setup might *
@@ -1204,8 +1126,6 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
             celltext = cell->celltext;
             break;
         case TSRC_DATA:
-            //celltext = PQgetvalue (priv->pgresult, rownum, cell->cell_col);
-            //cur_row = g_ptr_array_index (priv->pgresult, rownum);
             celltext = g_hash_table_lookup(g_ptr_array_index (priv->pgresult,
                                                             rownum),
                                                             cell->celltext);
@@ -1441,14 +1361,14 @@ render_row (StylePrintTable *self,
 
 static int
 render_row_grp (StylePrintTable *self,       // Global Data storage
-        GPtrArray *col_defs,         // The coldefs array
-        ROWPAD *padding,
-        int borderstyle,
-        // formatting->body,           // 
-        // formatting
-        PangoLayout *layout,
-        int cur_row,                // The first row to print
-        int end_row)                // The last row to print + 1
+                GPtrArray *col_defs,         // The coldefs array
+                ROWPAD *padding,
+                int borderstyle,
+                // formatting->body,           // 
+                // formatting
+                PangoLayout *layout,
+                int cur_row,                // The first row to print
+                int end_row)                // The last row to print + 1
 {
     StylePrintTablePrivate *priv;
     priv = style_print_table_get_instance_private (self);
@@ -1528,7 +1448,7 @@ render_header (StylePrintTable *self, GRPINF *curhdr)
 
 /* ******************************************************************** *
  * render_body() : Render the data.                                     *
- * Passed:  (1) - self : The global data                                *
+ * Passed:  (1) - self : The Object instance of StyleTablePrint         *
  *          (2) - The PangoContext for the printoperation               *
  *          (3) - The max row # to print in this category.  Note that   *
  *                the end of the page may be encountered before all the *
@@ -1634,7 +1554,6 @@ render_group(StylePrintTable *self,
                     g_hash_table_lookup (g_ptr_array_index (priv->pgresult,
                                                 grp_idx),
                                             curgrp->grpcol)));
-                    //PQgetvalue (priv->pgresult, grp_idx, curgrp->grpcol)));
 
         // Print Group Header, if applicable...
 
@@ -1727,7 +1646,6 @@ render_page(StylePrintTable *self)
     }
     else
     {
-        //lastrow = PQntuples (priv->pgresult);
         lastrow = priv->pgresult->len;
     }
 
@@ -1826,7 +1744,6 @@ style_print_table_begin_print (GtkPrintOperation *po,
     priv->PageEndRow = g_ptr_array_new();
 
     while ((priv->datarow) < priv->pgresult->len)
-            //PQntuples (STYLE_PRINT_TABLE(priv)->pgresult))
     {
         priv->ypos = 0;
         render_page (STYLE_PRINT_TABLE(po));
@@ -1837,7 +1754,7 @@ style_print_table_begin_print (GtkPrintOperation *po,
 
     gtk_print_operation_set_n_pages (po,
             priv->TotPages ? priv->TotPages : 1);
-    // Re-initialize Global variables
+    // Re-initialize Instance variables
     g_object_unref (priv->layout);
     priv->DoPrint = TRUE;
     priv->datarow = 0;
@@ -1865,7 +1782,10 @@ render_report (StylePrintTable *self)
             GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG, priv->w_main, &g_err);
     
     // Now free up everything that has been allocated...
-    g_ptr_array_free (priv->PageEndRow, TRUE);
+    if (priv->PageEndRow)
+    {
+        g_ptr_array_free (priv->PageEndRow, TRUE);
+    }
 }
 
 /**
@@ -1891,12 +1811,10 @@ style_print_table_from_xmlfile (StylePrintTable *self,
     int rdcount;
     GMarkupParseContext *gmp_contxt;
     GError *error;
-    //PGresult *res;
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
 
-    priv->xpos = 1949;
 //    if ( ! priv->conn)
 //    {
 //        report_error (priv,
@@ -1947,7 +1865,6 @@ style_print_table_from_xmlfile (StylePrintTable *self,
         render_report (self);
     }
 
-    //PQclear (priv->pgresult);
     //free_default_cell();
     //return STYLE_PRINT_TABLE(tbl)->grpHd; // Temporary - for debugging
 }
@@ -1984,11 +1901,6 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
 
     priv->pgresult = data;
 
-//    if (!priv->Page_Setup)
-//    {
-//        set_page_defaults (self);
-//    }
-
     gmp_contxt =
         g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
                 priv, NULL);
@@ -1996,7 +1908,6 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
     reset_default_cell (self);
     render_report (self);
     free_default_cell (self);
-    //return tbl->grpHd;   // For debugging - see what is produced in the GlobalData.grpHd struct
 }
 
 /**
@@ -2046,5 +1957,4 @@ style_print_table_get_wmain (StylePrintTable *self)
     StylePrintTablePrivate *priv =
             style_print_table_get_instance_private (self);
     return priv->w_main;
-    //return ((style_print_table_get_instance_private (self))->w_main);
 }

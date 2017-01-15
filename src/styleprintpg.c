@@ -19,7 +19,7 @@ see <http://www.gnu.org/licenses/>.
 */
 
 /* ************************************************************************ *
- * tblprint.c - Code for GtkTblPrintPg library function                     $
+ * styleprintpg.c - Code for GtkTblPrintPg library function                 $
  * $Id::                                                                    $
  * ************************************************************************ */
 
@@ -65,9 +65,9 @@ style_print_pg_init (StylePrintPg *pg)
 void
 style_print_pg_class_init (StylePrintPgClass *pg)
 {
-    StylePrintTableClass *table_class = (StylePrintTableClass *)pg;
-    table_class->from_xmlfile = style_print_pg_from_xmlfile;
-    table_class->from_xmlstring = style_print_pg_from_xmlstring;
+//    StylePrintTableClass *table_class = (StylePrintTableClass *)pg;
+//    table_class->from_xmlfile = style_print_pg_from_xmlfile;
+//    table_class->from_xmlstring = style_print_pg_from_xmlstring;
 }
 
 /* Error reporting routine.
@@ -335,9 +335,10 @@ style_print_pg_from_xmlstring ( StylePrintPg *pgprnt,
 
 /**
  * style_print_pg_new:
- * returns: (transfer none): The new #StylePrintPg pointer
  *
  * Creates a new #StylePrintPg instance
+ *
+ * Returns: (transfer none): The new #StylePrintPg pointer
  */
 
 StylePrintPg *

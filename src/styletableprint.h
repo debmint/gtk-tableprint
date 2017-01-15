@@ -52,15 +52,15 @@ struct _StylePrintTableClass
     GtkPrintOperationClass parent_class;
 
 
-    void (*from_xmlfile) (StylePrintTable *tblprnt,
-                         GtkWindow *win,
-                         GPtrArray *data,
-                         char *filename);
-
-    void (*from_xmlstring) (StylePrintTable *tp,
-                           GtkWindow *w,
-                           GPtrArray *data,
-                           char *c);
+//    void (*from_xmlfile) (StylePrintTable *tblprnt,
+//                         GtkWindow *win,
+//                         GPtrArray *data,
+//                         char *filename);
+//
+//    void (*from_xmlstring) (StylePrintTable *tp,
+//                           GtkWindow *w,
+//                           GPtrArray *data,
+//                           char *c);
     /* <private> */
     
     /* Padding for future expansion */
@@ -75,20 +75,6 @@ struct _StylePrintTableClass
     void (*_gtk_reserved9) (void);
     void (*_gtk_reserved10) (void);
 };
-
-//struct _StylePrintTable
-//{
-//    /*< private >*/
-//    GtkPrintOperation parent_instance;
-//
-//    StylePrintTablePrivate *priv;
-//
-//    gpointer extra_space[12];
-//};
-
-//typedef struct _TablePrintOperationClass TablePrintOperationClass;
-//typedef struct _GtkStylePrintTable GtkGtkTablePrint
-//typedef struct _TablePrintOperation TablePrintOperation;
 
 #ifndef STRMATCH
 #   define STRMATCH(a,b) (strcmp(a, b) == 0)
@@ -190,8 +176,6 @@ StylePrintTable *style_print_table_new(void);
 void style_print_table_set_wmain (StylePrintTable *self, GtkWindow *win);
 GtkWindow * style_print_table_get_wmain (StylePrintTable *self);
 
-//typedef struct tbl_data {
-//} TBLDATA, *PTBLDATA;
 #ifdef _cplusplus
 }
 #endif

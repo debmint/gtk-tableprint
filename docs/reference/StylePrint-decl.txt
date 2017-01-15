@@ -17,7 +17,7 @@ void
 <FUNCTION>
 <NAME>style_print_pg_connect</NAME>
 <RETURNS>gint  </RETURNS>
-StylePrintPg *, gchar *
+StylePrintPg *self, gchar *dbn
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_pg_from_xmlfile</NAME>
@@ -32,12 +32,12 @@ StylePrintPg *, gchar *
 <FUNCTION>
 <NAME>style_print_pg_do</NAME>
 <RETURNS>void  </RETURNS>
- StylePrintPg *, const gchar *
+ StylePrintPg *self, const gchar *qry
 </FUNCTION>
 <FUNCTION>
 <NAME>style_print_pg_appendParam</NAME>
 <RETURNS>void  </RETURNS>
- StylePrintPg *, const gchar *
+ StylePrintPg *self, const gchar *param
 </FUNCTION>
 <STRUCT>
 <NAME>StylePrintPg</NAME>
@@ -52,6 +52,16 @@ struct _StylePrintTableClass
 {
     GtkPrintOperationClass parent_class;
 
+
+    void (*from_xmlfile) (StylePrintTable *tblprnt,
+                         GtkWindow *win,
+                         GPtrArray *data,
+                         char *filename);
+
+    void (*from_xmlstring) (StylePrintTable *tp,
+                           GtkWindow *w,
+                           GPtrArray *data,
+                           char *c);
     /* <private> */
     
     /* Padding for future expansion */

@@ -1,10 +1,9 @@
 
 AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq`
 
-AM_LDFLAGS = -g -Wall -O0 @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
+AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
 			-L`pg_config --libdir` -lexpat
 
-AM_CFLAGS = -g -O0
 IR_SCANFLAGS = `pkg-config --cflags libpq`
 
 lib_LTLIBRARIES	= libstyletableprint.la
