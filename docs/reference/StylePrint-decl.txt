@@ -1,4 +1,48 @@
 <MACRO>
+<NAME>STYLE_PRINT_TYPE_MY</NAME>
+#define STYLE_PRINT_TYPE_MY (style_print_my_get_type())
+</MACRO>
+<STRUCT>
+<NAME>StylePrintMyClass</NAME>
+struct _StylePrintMyClass
+{
+    StylePrintTableClass parent_class;
+};
+</STRUCT>
+<FUNCTION>
+<NAME>style_print_my_new</NAME>
+<RETURNS>StylePrintMy  * </RETURNS>
+void
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_my_connect</NAME>
+<RETURNS>gint  </RETURNS>
+StylePrintMy *self, const gchar  *host, const gchar  *user, const gchar  *passwd, const gchar  *db, unsigned int  port, const gchar  *unix_socket, unsigned long client_flag
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_my_from_xmlfile</NAME>
+<RETURNS>void  </RETURNS>
+ StylePrintMy *myprnt, GtkWindow *win, const gchar *qry, char *filename
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_my_from_xmlstring</NAME>
+<RETURNS>void  </RETURNS>
+ StylePrintMy *myprnt, GtkWindow *win, const gchar *qry, char *xmlstr
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_my_do</NAME>
+<RETURNS>void  </RETURNS>
+ StylePrintMy *self, const gchar *qry
+</FUNCTION>
+<FUNCTION>
+<NAME>style_print_my_appendParam</NAME>
+<RETURNS>void  </RETURNS>
+ StylePrintMy *self, const gchar *param
+</FUNCTION>
+<STRUCT>
+<NAME>StylePrintMy</NAME>
+</STRUCT>
+<MACRO>
 <NAME>STYLE_PRINT_TYPE_PG</NAME>
 #define STYLE_PRINT_TYPE_PG (style_print_pg_get_type())
 </MACRO>
@@ -53,15 +97,15 @@ struct _StylePrintTableClass
     GtkPrintOperationClass parent_class;
 
 
-    void (*from_xmlfile) (StylePrintTable *tblprnt,
-                         GtkWindow *win,
-                         GPtrArray *data,
-                         char *filename);
-
-    void (*from_xmlstring) (StylePrintTable *tp,
-                           GtkWindow *w,
-                           GPtrArray *data,
-                           char *c);
+//    void (*from_xmlfile) (StylePrintTable *tblprnt,
+//                         GtkWindow *win,
+//                         GPtrArray *data,
+//                         char *filename);
+//
+//    void (*from_xmlstring) (StylePrintTable *tp,
+//                           GtkWindow *w,
+//                           GPtrArray *data,
+//                           char *c);
     /* <private> */
     
     /* Padding for future expansion */

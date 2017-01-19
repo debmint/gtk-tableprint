@@ -1,17 +1,18 @@
 
-AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq`
+AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq` \
+			  `mysql_config --cflags`
 
 AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
-			-L`pg_config --libdir` -lexpat
+			-L`pg_config --libdir` `mysql_config --libs` -lexpat
 
-IR_SCANFLAGS = `pkg-config --cflags libpq`
+IR_SCANFLAGS = `pkg-config --cflags libpq` 	`mysql_config --cflags`
 
 lib_LTLIBRARIES	= libstyletableprint.la
-libstyletableprint_la_SOURCES = styletableprint.c styleprintpg.c
+libstyletableprint_la_SOURCES = styletableprint.c styleprintpg.c styleprintmy.c
 
-source_h = styletableprint.h styleprintpg.h $(NULL)
+source_h = styletableprint.h styleprintpg.h styleprintmy.h $(NULL)
 
-include_HEADERS = styletableprint.h styleprintpg.h
+include_HEADERS = styletableprint.h styleprintpg.h styleprintmy.h
 
 styletableprintincludedir = $(srcdir)
 
