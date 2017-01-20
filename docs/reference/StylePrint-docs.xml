@@ -18,7 +18,7 @@
 
   <part id="styleprint-defs">
     <title>StyleTablePrint Definitions</title>
-    <xi:include href="xml/styletableprint.xml"/>
+    <xi:include href="xml/styleprinttable.xml"/>
     <xi:include href="xml/styleprintpg.xml"/>
     <xi:include href="xml/styleprintmy.xml"/>
   </part>

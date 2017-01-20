@@ -28,7 +28,7 @@ StylePrintPg
 </SECTION>
 
 <SECTION>
-<FILE>styletableprint</FILE>
+<FILE>styleprinttable</FILE>
 <TITLE>StylePrintTable</TITLE>
 STYLE_PRINT_TYPE_TABLE
 StylePrintTableClass

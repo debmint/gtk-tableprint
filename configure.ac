@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.62)
-AC_INIT(styletableprint,0.1)
-AC_CONFIG_SRCDIR([src/styletableprint.c])
+AC_INIT(styleprinttable,0.1)
+AC_CONFIG_SRCDIR([src/styleprinttable.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wno-portability])

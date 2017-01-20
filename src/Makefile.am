@@ -7,18 +7,18 @@ AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
 
 IR_SCANFLAGS = `pkg-config --cflags libpq` 	`mysql_config --cflags`
 
-lib_LTLIBRARIES	= libstyletableprint.la
-libstyletableprint_la_SOURCES = styletableprint.c styleprintpg.c styleprintmy.c
+lib_LTLIBRARIES	= libstyleprinttable.la
+libstyleprinttable_la_SOURCES = styleprinttable.c styleprintpg.c styleprintmy.c
 
-source_h = styletableprint.h styleprintpg.h styleprintmy.h $(NULL)
+source_h = styleprinttable.h styleprintpg.h styleprintmy.h $(NULL)
 
-include_HEADERS = styletableprint.h styleprintpg.h styleprintmy.h
+include_HEADERS = styleprinttable.h styleprintpg.h styleprintmy.h
 
-styletableprintincludedir = $(srcdir)
+styleprinttableincludedir = $(srcdir)
 
-styletableprintinclude_DATA = $(source_h) $(NULL)
+styleprinttableinclude_DATA = $(source_h) $(NULL)
 
-EXTRA_DIST=styletableprintpriv.h
+EXTRA_DIST=styleprinttablepriv.h
 
 CLEANFILES =
 
@@ -27,12 +27,12 @@ INTROSPECTION_GIRS = StylePrint_1_0_gir
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --warn-all
 
 if HAVE_INTROSPECTION
-introspection_sources = $(libstyletableprint_la_SOURCES)
+introspection_sources = $(libstyleprinttable_la_SOURCES)
 
-StylePrint-1.0-gir: libstyletableprint.la
+StylePrint-1.0-gir: libstyleprinttable.la
 StylePrint_1_0_gir_INCLUDES = Gtk-3.0
 StylePrint_1_0_gir_CFLAGS = $(IR_SCANFLAGS)
-StylePrint_1_0_gir_LIBS =libstyletableprint.la
+StylePrint_1_0_gir_LIBS =libstyleprinttable.la
 StylePrint_1_0_gir_FILES = $(introspection_sources) $(include_HEADERS)
 StylePrint_1_0_gir_NAMESPACE = StylePrint
 INTROSPECTION_GIRS += StylePrint-1.0.gir

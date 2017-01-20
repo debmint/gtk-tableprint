@@ -19,7 +19,7 @@ see <http://www.gnu.org/licenses/>.
 */
 
 /* ************************************************************************ *
- * styletableprint.c - Mainline module for TablePrint library function      $
+ * styleprinttable.c - Mainline module for TablePrint library function      $
  *                                                                          $
  * The setup of the control for the print output is contained in a          $
  * GHashTable structure.  This contains headers for each part of the        $
@@ -45,10 +45,10 @@ see <http://www.gnu.org/licenses/>.
 #include <pango/pango.h>
 #include <glib-object.h>
 #include <cairo.h>
-#include "styletableprintpriv.h"
+#include "styleprinttablepriv.h"
 
 /**
- * SECTION: styletableprint
+ * SECTION: styleprinttable
  * @Title: StylePrintTable
  * @Short_description: Print data from PostGres, in tabular form using #GtkPrintOperation
  * @See_also: #GtkPrintOperation, #libpq (in PostGreSQL documentation)

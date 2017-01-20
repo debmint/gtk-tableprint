@@ -19,11 +19,12 @@ see <http://www.gnu.org/licenses/>.
 */
 
 /* ************************************************************************ *
- * tblprintprivate.h - Private Header file for TblPrint library function    $
+ * styleprinttableprivate.h - Private Header file for StylePrintTable       *
+ * library function                                                         $
  * $Id:: tblprint.h 40 2016-11-27 22:30:07Z dlb                             $
  * ************************************************************************ */
 
-#include "styletableprint.h"
+#include "styleprinttable.h"
 
 // A structure to determine the padding for a row, defined in
 // PrintContext units

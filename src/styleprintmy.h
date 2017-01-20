@@ -34,7 +34,7 @@ extern "C"
 #include <gtk/gtk.h>
 #include <glib-object.h>
 #include <glib.h>
-#include <styletableprint.h>
+#include <styleprinttable.h>
 #include <mysql.h>
 
 G_BEGIN_DECLS
