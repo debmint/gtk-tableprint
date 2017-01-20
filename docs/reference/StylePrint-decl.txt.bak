@@ -39,11 +39,6 @@ StylePrintMy *self, const gchar  *host, const gchar  *user, const gchar  *passwd
 <RETURNS>void  </RETURNS>
  StylePrintMy *self, const gchar *param
 </FUNCTION>
-<FUNCTION>
-<NAME>style_print_my_select_db</NAME>
-<RETURNS>gint  </RETURNS>
-StylePrintMy *self, const gchar *db
-</FUNCTION>
 <STRUCT>
 <NAME>StylePrintMy</NAME>
 </STRUCT>

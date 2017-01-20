@@ -103,15 +103,19 @@ report_err (StylePrintMy *self, const char *message)
  * @host: (nullable): The host - can be either hostname or IP address
  * @user: (nullable): The username
  * @passwd: (nullable): The user's password
- *
- * Returns: 1 on success, 0 on failure.
+ * @db: (nullable): The name of the database to connect to.
+ * @port: The port on which to connect - The default if not specified
+ * @unix_socket: (nullable): the unix socket name
+ * @client_flag: Flags for connection - Not often needed
  *
  * Establishes a connection to the database.  This must be done before any
  * queries or commands are sent to the database.
  *
- *(See mySQL documentation for details on connection parameters)
+ * Note: See mySQL documentation for details on connection parameters
  *
  * Free the string upon return if need be.
+ *
+ * Returns: 1 on success, 0 on failure.
  *
  */
 

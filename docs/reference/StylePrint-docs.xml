@@ -20,6 +20,7 @@
     <title>StyleTablePrint Definitions</title>
     <xi:include href="xml/styletableprint.xml"/>
     <xi:include href="xml/styleprintpg.xml"/>
+    <xi:include href="xml/styleprintmy.xml"/>
   </part>
   <part>
       <title>Definitions for the XML Specification</title>

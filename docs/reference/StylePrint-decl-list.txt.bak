@@ -9,7 +9,6 @@ style_print_my_from_xmlfile
 style_print_my_from_xmlstring
 style_print_my_do
 style_print_my_appendParam
-style_print_my_select_db
 StylePrintMy
 </SECTION>
 

@@ -30,7 +30,7 @@ see <http://www.gnu.org/licenses/>.
  * SECTION:styleprintpg
  * @short_description: Postgresql interface to #StylePrintTable
  * @Title: StylePrintPg
- * @See_also: #StylePrintTale
+ * @See_also: #StylePrintTable
  *
  * #StylePrintTable is a utility to print data in a tabular form.  However,
  * it is generic, and its data is provided in a #GPtrArray containing
@@ -99,16 +99,15 @@ report_err (StylePrintPg *self, char *message)
 
 /**
  * style_print_pg_connect:
- * @self: The #StylePrintPg *
+ * @self: The #StylePrintPg
  * @dbn: The connection string set up in the way it is sent to the database
- *(see PostgreSQL documentation for details on format)
  *
- * Returns: 1 on success, 0 on failure.
- *
- * Establishes a connection to the database.  This must be done before any
- * queries or commands are sent to the database.
+ * Establishes a connection to the database.  This must be done before any queries or commands are sent to the database.
+ * Note: see PostgreSQL documentation for details on the format for the @dbn string.
  *
  * Free the string upon return if need be.
+ *
+ * Returns: 1 on success, 0 on failure.
  *
  */
 
