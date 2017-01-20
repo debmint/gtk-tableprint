@@ -177,7 +177,7 @@ arylist (GHashTable *ht, gpointer udat)
     val = (gchar *)g_hash_table_lookup(ht,"who");
     if (val)
     {
-        fprintf(stderr, val);
+        fprintf(stderr, "%s", val);
     }
     else
     {
