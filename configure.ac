@@ -9,12 +9,12 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 # Checks for programs.
+AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
-AC_PROG_CXX
 LT_INIT
 
 #
@@ -25,16 +25,22 @@ GTK_DOC_CHECK([1.0], [--flavour no-tmpl])
 GOBJECT_INTROSPECTION_CHECK([1.30.0])
 
 # Checks for libraries.
+AX_LIB_MYSQL()
+AM_CONDITIONAL([INCLUDE_MYSQL],test -n "$MYSQL_VERSION")
+AX_LIB_POSTGRESQL()
+AM_CONDITIONAL([INCLUDE_POSTGRESQL],test -n "$POSTGRESQL_VERSION")
 
 AC_FUNC_MALLOC
 #AC_PROG_RANLIB
 
 # Checks for header files.
+AC_CHECK_HEADERS([stdlib.h string.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
 # Checks for library functions.
+AC_FUNC_MALLOC
 
 AC_CANONICAL_HOST
 case $host_os in
@@ -47,6 +53,8 @@ esac
 
 AC_SUBST(noundef)
 
-AC_CONFIG_FILES([Makefile src/Makefile docs/Makefile \
-                 docs/reference/Makefile])
+AC_CONFIG_FILES([Makefile
+                 docs/Makefile
+                 docs/reference/Makefile
+                 src/Makefile])
 AC_OUTPUT

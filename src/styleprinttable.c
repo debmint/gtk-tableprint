@@ -50,23 +50,23 @@ see <http://www.gnu.org/licenses/>.
 /**
  * SECTION: styleprinttable
  * @Title: StylePrintTable
- * @Short_description: Print data from PostGres, in tabular form using #GtkPrintOperation
- * @See_also: #GtkPrintOperation, #libpq (in PostGreSQL documentation)
+ * @Short_description: Print data in tabular form using #GtkPrintOperation
+ * @See_also: #GtkPrintOperation
  *
- * StylePrintTable a subclass of GtkPrintOperation.  It formats data obtained
- * from a query sent to a PostGreSQL database into columns and rows.
- * The data can be grouped and sub-grouped, if need be.
+ * StylePrintTable is a subclass of GtkPrintOperation.  It takes data
+ * contained in a #GPtrArray and formats it into columns and rows in the
+ * printout.  The data can be grouped and sub-grouped, if need be.
+ * This grouping is determined by the keys in the #GHashTable members
+ * of the #GPtrArray.
  * The formatting of the printout is defined by an XML document, either
  * obtained from a file, or an embedded string.
  *
  * To print a document, you first create a #StylePrintTable object with
- * style_print_table_new().  Before actually printing, you need to establish
- * a connection with style_print_table_connect(), and if you are going to send
- * your query with parameters, you need to establish them (one at a time), with
- * style_print_table_appendParam().  You then begin printing by calling the
+ * style_print_table_new().  You then begin printing by calling the
  * function style_print_table_from_xmlstring() or
  * style_print_table_from_xmlfile(), depending on the source of the xml
  * data.
+ *
  * Parameters to pass to the the function which are:
  * the #StylePrintTable object, a window (normally the main window)
  * is to be the parent window of any warning dialogs, etc.  This window
@@ -74,6 +74,13 @@ see <http://www.gnu.org/licenses/>.
  * to STDERR.  Additional parameters are the PGresult of the database query,
  * and a string which represents either the pointer to the string or the name
  * of the file containing the xml specification for the output.
+ *
+ * Finally, note that manually setting up the data to print might be quite
+ * tedious, so #StylePrinTable can be extended with subclasses that provide
+ * this data. The most common source of the data is a database, so extensions
+ * can be provided.  Two such extensions have already been provided -
+ * #StylePrintPg (retrieve data from a Postgresql database) and #StylePrintMy
+ * (retrieve data from a Mysql (or MariaDB) database).
  *
  * There is no need to set up the "begin_print" or "draw_page" callbacks,
  * because this object handles this setup itself.

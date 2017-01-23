@@ -25,3 +25,27 @@ that file whey you run "./configure", you need to include the option
 
 to enable the building of the Gtk Documentation, as this feature is
 disabled by default.
+
+===================================================================
+
+SELECTING COMPONENTS TO BUILD
+
+The primary module - which is _always_ build, is StylePrintTable.
+Additional modules for use with specific databases, are optional,
+but by default all are build.  It can be determined which are built
+by specifying certain options when ./configure is run.
+
+            --with-mysql[=(yes|no|/path/to/config-prog)]
+
+This controls whether StylePrintMy for mysql/mariaDB is built.  No parameter
+implies "yes" (the default behavior), and causes it to try "mysql_config".
+Otherwise, the complete path to the configure program can be provided.  This
+can be either /path/to/mysql_config or /path/to/mariadb_config.  If the
+config is "mysql_config" and is in your PATH list, there is no need to
+provide this option.
+
+            --with-postgresql[=(yes|no|/path/to/pg_config)]
+
+This controls whether StylePrintPg - for postgresql is build.  The parameter
+usage is the sames as for --with-mysql, and everything said above applies to
+this option (except for an alternate database).

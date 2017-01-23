@@ -28,7 +28,7 @@ StylePrint?1?0?gir
 *.typelib
 StylePrint-doc.top
 StylePrint-doc.bottom
-styletableprint.xml
+styleprinttable.xml
 styleprintpg.xml
 styleprintmy.xml
 tree_index.sgml

@@ -1,24 +1,37 @@
 
 AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq` \
-			  `mysql_config --cflags`
+			  @MYSQL_CFLAGS@ @POSTGRESQL_CPPFLAGS@
 
-AM_LDFLAGS = -g -Wall @noundef@ `pkg-config --libs gtk+-3.0 libpq`\
-			-L`pg_config --libdir` `mysql_config --libs` -lexpat
+AM_LDFLAGS = -g -Wall @noundef@ @MYSQL_LDFLAGS@ `pkg-config --libs gtk+-3.0 libpq`\
+			 @POSTGRESQL_LDFLAGS@
 
-IR_SCANFLAGS = `pkg-config --cflags libpq` 	`mysql_config --cflags`
+IR_SCANFLAGS = @MYSQL_CFLAGS@ @POSTGRESQL_CPPFLAGS@
 
 lib_LTLIBRARIES	= libstyleprinttable.la
-libstyleprinttable_la_SOURCES = styleprinttable.c styleprintpg.c styleprintmy.c
+libstyleprinttable_la_SOURCES = styleprinttable.c
 
-source_h = styleprinttable.h styleprintpg.h styleprintmy.h $(NULL)
+source_h = styleprinttable.h $(NULL)
 
-include_HEADERS = styleprinttable.h styleprintpg.h styleprintmy.h
+include_HEADERS = styleprinttable.h
 
+if INCLUDE_POSTGRESQL
+libstyleprinttable_la_SOURCES += styleprintpg.c
+source_h += styleprintpg.h
+include_HEADERS += styleprintpg.h
+endif
+
+if INCLUDE_MYSQL
+libstyleprinttable_la_SOURCES += styleprintmy.c
+source_h += styleprintmy.h
+include_HEADERS += styleprintmy.h
+endif
+
+source_h += $(NULL)
 styleprinttableincludedir = $(srcdir)
 
 styleprinttableinclude_DATA = $(source_h) $(NULL)
 
-EXTRA_DIST=styleprinttablepriv.h
+EXTRA_DIST = styleprinttablepriv.h
 
 CLEANFILES =
 
