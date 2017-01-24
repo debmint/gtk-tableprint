@@ -1900,7 +1900,6 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
    
     priv = style_print_table_get_instance_private (self);
 
-
     if (wmain)
     {
         priv->w_main = wmain;
@@ -1910,8 +1909,15 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
 
     gmp_contxt =
         g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
-                priv, NULL);
-    g_markup_parse_context_parse (gmp_contxt, xml, strlen(xml), &error);
+                self, NULL);
+
+    error = NULL;
+
+    if (! g_markup_parse_context_parse (gmp_contxt, xml, strlen(xml), &error))
+    {
+        report_error (self, error->message);
+    }
+
     reset_default_cell (self);
     render_report (self);
     free_default_cell (self);

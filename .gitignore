@@ -22,6 +22,11 @@ install-sh
 stamp-h1
 *.png
 **/*.swp
+m4/lt*
+m4/libtool.m4
+configure.scan
+autoscan.log
+autom4te.cache
 
 html
 StylePrint?1?0?gir
