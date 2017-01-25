@@ -5,7 +5,9 @@
 
 <chapter id="xmlbodydef"><title>Body</title>
   <para>
-    body:: (font?, <link linkend='xmlcelldef'>cell+</link>)
+    body:: (<link linkend='xmlheaderdef'>header</link>?,
+    <link linkend='xmlfontdef'>font</link>?,
+    <link linkend='xmlcelldef'>cell</link>+)
   </para>
   <para>
     <table frame="all"><title>Attributes</title>
@@ -70,9 +72,13 @@
   <formalpara><title>Description</title>
     <para>
       The <code>body</code> is where the columnar data is printed.  This
-      defines the layout in which the data is printed.  This is specified
+      defines the layout in which the data is printed.
+    </para>
+    <para>
+      This is specified
       by an array of &lt;cell&gt; definitions, which specify the percentage,
-      font and other definitions.
+      font and other definitions.  Each column is defined by a &lt;cell&gt;
+      definition.
     </para>
   </formalpara>
 </chapter>

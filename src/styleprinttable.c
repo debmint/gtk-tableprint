@@ -1208,7 +1208,7 @@ hline (StylePrintTable *self, double ypos, double weight)
         cairo_stroke (priv->cr);
     }
 
-    return 2;
+    return 1;
 }
 
 /* **************************************************************** *
@@ -1381,6 +1381,7 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
     priv = style_print_table_get_instance_private (self);
     int cur_idx = cur_row;
     double max_y = priv->pageheight - priv->textheight;
+    double line_ht;
    
 
 
@@ -1391,12 +1392,30 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
     }
 
     // Render HLINE above first line, if applicable
-    if (borderstyle & BDY_HLINE)
+    switch (borderstyle)
     {
-        double line_ht = hline (self, priv->ypos, 1.0);
-        priv->ypos += line_ht;
-        max_y -= line_ht * 2;
+
+        case DBLBAR:
+            line_ht = hline (self, priv->ypos, 0.5);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
+            // Fall through to SINGLEBAR to print second bar
+        case SINGLEBAR:
+            line_ht = hline (self, priv->ypos, 0.5);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
+            break;
+        case SINGLEBAR_HVY:
+            line_ht = hline (self, priv->ypos, 1.0);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
     }
+//    if (borderstyle & BDY_HLINE)
+//    {
+//        double line_ht = hline (self, priv->ypos, 1.0);
+//        priv->ypos += line_ht;
+//        max_y -= line_ht * 2;
+//    }
 
     for (cur_idx = cur_row; cur_idx < end_row; cur_idx++)
     {
@@ -1414,6 +1433,27 @@ render_row_grp (StylePrintTable *self,       // Global Data storage
             ++cur_idx;      // Position to next data row for return
             return cur_idx;
         }
+    }
+
+    // Render HLINE below last line, if applicable
+
+    switch (borderstyle)
+    {
+
+        case DBLBAR:
+            line_ht = hline (self, priv->ypos, 0.5);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
+            // Fall through to SINGLEBAR to print second bar
+        case SINGLEBAR:
+            line_ht = hline (self, priv->ypos, 0.5);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
+            break;
+        case SINGLEBAR_HVY:
+            line_ht = hline (self, priv->ypos, 1.0);
+            priv->ypos += line_ht;
+            max_y -= line_ht;
     }
 
     return cur_idx;
@@ -1473,6 +1513,11 @@ render_body (StylePrintTable *self,
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
+
+    if (bdy->header)
+    {
+        render_header (self, bdy->header);
+    }       // if (curgrp->header)
 
     if (bdy->celldefs)
     {

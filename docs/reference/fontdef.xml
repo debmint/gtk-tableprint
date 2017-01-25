@@ -1,0 +1,215 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN"
+                "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd" [
+                ]>
+
+<chapter id='xmlfontdef'><title>Font Definition</title>
+  <para>
+    font:: ()
+  </para>
+  <para>
+    <table frame='all'><title>Attributes</title>
+      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+        <thead>
+          <row>
+            <entry>Name</entry>
+            <entry>Type</entry>
+            <entry>Default</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>family</entry>
+            <entry>CDATA</entry>
+            <entry>&lt;none&gt;</entry>
+          </row>
+          <row>
+            <entry>size</entry>
+            <entry>CDATA</entry>
+            <entry></entry>
+          </row>
+          <row>
+            <entry>style</entry>
+            <entry>
+              <simplelist>
+                <member><emphasis>Enumeration</emphasis></member>
+                <member>normal</member>
+                <member>oblique</member>
+                <member>italic</member>
+              </simplelist>
+            </entry>
+            <entry>
+            </entry>
+          </row>
+          <row>
+            <entry>weight</entry>
+            <entry>
+              <simplelist>
+                <member><emphasis>Enumeration</emphasis></member>
+                <member>thin</member>
+                <member>ultralight</member>
+                <member>light</member>
+                <member>book</member>
+                <member>normal</member>
+                <member>medium</member>
+                <member>semibold</member>
+                <member>bold</member>
+                <member>heavy</member>
+                <member>ultraheavy</member>
+              </simplelist>
+            </entry>
+            <entry>
+            </entry>
+          </row>
+          <row>
+            <entry>variant</entry>
+            <entry>
+              <simplelist>
+                <member><emphasis>Enumeration</emphasis></member>
+                <member>normal</member>
+                <member>small-caps</member>
+              </simplelist>
+            </entry>
+            <entry>
+            </entry>
+          </row>
+          <row>
+            <entry>stretch</entry>
+            <entry>
+              <simplelist>
+              <member><emphasis>Enumeration</emphasis></member>
+              <member>ultra-condensed</member>
+              <member>extra-condensed</member>
+              <member>condensed</member>
+              <member>semi-condensed</member>
+              <member>normal</member>
+              <member>semi-expanded</member>
+              <member>expanded</member>
+              <member>extra-expanded</member>
+              <member>ultra-expanded</member>
+              </simplelist>
+            </entry>
+            <entry>
+            </entry>
+          </row>
+          <row>
+            <entry>align</entry>
+            <entry>
+              <simplelist>
+                <member><emphasis>Enumeration</emphasis></member>
+                <member>l</member>
+                <member>c</member>
+                <member>r</member>
+              </simplelist>
+            </entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </para>
+  <para>
+    <variablelist><title>Attribute Description</title>
+      <varlistentry>
+        <term>family</term>
+        <listitem>
+          The name of the font family.  The available types depend upon the
+          system.
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>style</term>
+        <listitem>
+          <para>The style in which the font is rendered.  The available
+            options are>
+          </para>
+          <para>
+            <itemizedlist mark='bullet'>
+              <listitem><para>normal</para></listitem>
+              <listitem><para>oblique</para></listitem>
+              <listitem><para>italic</para></listitem>
+            </itemizedlist>
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>size</term>
+        <listitem>
+          The size (in points) for the font.  The default is either the
+          program default, the size defined in defaultcell.
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>weight</term>
+        <listitem>
+          <para>The weight of the characters.  The available options are
+            (from thinnest to thickest):
+          </para>
+          <para>
+            <itemizedlist>
+              <listitem><para>thin</para></listitem>
+              <listitem><para>ultralight</para></listitem>
+              <listitem><para>light</para></listitem>
+              <listitem><para>book</para></listitem>
+              <listitem><para>normal</para></listitem>
+              <listitem><para>medium</para></listitem>
+              <listitem><para>semibold</para></listitem>
+              <listitem><para>bold</para></listitem>
+              <listitem><para>heavy</para></listitem>
+              <listitem><para>ultraheavy</para></listitem>
+            </itemizedlist>
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>variant</term>
+        <listitem>
+          <para>
+            The variant of the characters.  The options are:
+          </para>
+          <para>
+            <itemizedlist>
+              <listitem><para>normal</para></listitem>
+              <listitem><para>small-caps</para></listitem>
+            </itemizedlist>
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>stretch</term>
+        <listitem>
+          <para>
+            The amount of horizontal stretch for the font.  The available
+            options are (from most narrow to widest):
+          </para>
+          <para>
+            <itemizedlist>
+              <listitem><para>ultra-condensed</para></listitem>
+              <listitem><para>extra-condensed</para></listitem>
+              <listitem><para>condensed</para></listitem>
+              <listitem><para>semi-condensed</para></listitem>
+              <listitem><para>normal</para></listitem>
+              <listitem><para>semi-expanded</para></listitem>
+              <listitem><para>expanded</para></listitem>
+              <listitem><para>extra-expanded</para></listitem>
+              <listitem><para>ultra-expanded</para></listitem>
+            </itemizedlist>
+          </para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term>align</term>
+        <listitem>
+          <para>The alignment for the font
+          </para>
+          <para>
+            <itemizedlist>
+              <listitem>l</listitem>
+              <listitem>c</listitem>
+              <listitem>r</listitem>
+            </itemizedlist>
+          </para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </para>
+</chapter>

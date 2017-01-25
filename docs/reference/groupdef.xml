@@ -4,7 +4,9 @@
                 ]>
 <chapter id="groupdef"><title>Groups</title>
   <para>
-    group:: (header?, footer?, (group | <link linkend='xmlbodydef'>body</link>))
+    group:: (<link linkend='xmlheaderdef'>header</link>?,
+    footer?, (<link linkend='groupdef'>group</link> |
+    <link linkend='xmlbodydef'>body</link>))
   </para>
   <para>
     <table frame='all'><title>Attributes</title>
