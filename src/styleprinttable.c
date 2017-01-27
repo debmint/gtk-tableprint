@@ -1550,15 +1550,11 @@ render_body (StylePrintTable *self,
  * ******************************************************************** */
 
 static int
-render_group(StylePrintTable *self,
-                GRPINF *curgrp,
-                int maxrow)
+render_group (StylePrintTable *self,
+                       GRPINF *curgrp,
+                          int  maxrow)
 {
-    //double y_pos = self->ypos;
-    //int grp_y = self->ypos,
     int    grp_top;
-    //GRPINF *cg = curgrp;
-    //PangoLayout *layout = set_layout(self, render_params, self->layout);
     StylePrintTablePrivate *priv;
     priv = style_print_table_get_instance_private (self);
     int grp_idx = priv->datarow;
@@ -1589,7 +1585,6 @@ render_group(StylePrintTable *self,
     // This loop parses the entire range passed to the group.
     while ((grp_idx < maxrow) && (priv->ypos < priv->pageheight))
     {
-        //char *grptxt = PQgetvalue(priv->pgresult, grp_idx, curgrp->grpcol);
         char *grptxt = g_hash_table_lookup (g_ptr_array_index (priv->pgresult,
                                                 grp_idx),
                                             curgrp->grpcol);
@@ -1681,14 +1676,13 @@ render_group(StylePrintTable *self,
 }
 
 static void
-render_page(StylePrintTable *self)
+render_page (StylePrintTable *self)
 {
     GRPINF *curgrp;
     int lastrow;
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
-
 
     priv->ypos = 0;
 
@@ -1767,7 +1761,7 @@ style_print_table_draw_page (GtkPrintOperation *op,
 
 static void
 style_print_table_begin_print (GtkPrintOperation *po,
-        GtkPrintContext *context)
+                                 GtkPrintContext *context)
 {
     PangoLayout *lo;
     PangoRectangle log_rect;
@@ -1775,7 +1769,6 @@ style_print_table_begin_print (GtkPrintOperation *po,
    
     priv = style_print_table_get_instance_private (STYLE_PRINT_TABLE(po));
 
-    //int firstrow = 0;   // First datarow for the page;
     priv->datarow = 0;
     priv->pageno = 0;
     priv->context = context;
@@ -1853,10 +1846,9 @@ render_report (StylePrintTable *self)
 
 void
 style_print_table_from_xmlfile (StylePrintTable *self,
-                                        GtkWindow *wmain,
-                                        GPtrArray *data,
-                                        //GPtrArray *parms,
-                                        char *fname)
+                                      GtkWindow *wmain,
+                                      GPtrArray *data,
+                                           char *fname)
 {
     char buf[3000];
     FILE *fp;
@@ -1866,12 +1858,6 @@ style_print_table_from_xmlfile (StylePrintTable *self,
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
-
-//    if ( ! priv->conn)
-//    {
-//        report_error (priv,
-//                "No connection!  Please connect to database first");
-//    }
 
     if (wmain)
     {

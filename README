@@ -8,8 +8,6 @@ of this distribution
            docs/reference/html/index.html
 for details of the format for this xml data.
 
-The data is read from a PostGreSQL database using a provided query.
-
 This library implements GObject-Introspetion, and so it can be used
 by any programming language that supports GObject-Introspection.
 
@@ -37,12 +35,14 @@ by specifying certain options when ./configure is run.
 
             --with-mysql[=(yes|no|/path/to/config-prog)]
 
-This controls whether StylePrintMy for mysql/mariaDB is built.  No parameter
-implies "yes" (the default behavior), and causes it to try "mysql_config".
-Otherwise, the complete path to the configure program can be provided.  This
-can be either /path/to/mysql_config or /path/to/mariadb_config.  If the
-config is "mysql_config" and is in your PATH list, there is no need to
-provide this option.
+This controls whether StylePrintMy for mysql/mariaDB is built.  If a parameter
+is not included with this option, the default behavior of "yes" is implied,
+and causes it to try "mysql_config".  If "mysql_config" is not present on
+the system, the path to mariadb_config must be provided, or a symlink in
+the $PATH environment pointing to "mariadb_config" having the name
+"mysql_config" must be provided.  This can be either /path/to/mysql_config
+or /path/to/mariadb_config.  If the config is "mysql_config" and is in your
+PATH list, there is no need to even specify this option.
 
             --with-postgresql[=(yes|no|/path/to/pg_config)]
 
