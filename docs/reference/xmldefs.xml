@@ -9,7 +9,7 @@
   a file external to the program.
 </para>
 <para>
-  The data is read by the #GMarkupParser utility in the #Glib module.  It
+  The data is read by the #GMarkupParser utility in the #GLib module.  It
   is not really strict in itself, and cannot use a DTD or any advanced
   features, but the format is determined within the #StylePrintTable class
   itself.

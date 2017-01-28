@@ -6,7 +6,7 @@
 <chapter id="common_attribs"><title>Common Attributes</title>
   <formalpara><title>Synopsis</title>
     <para>These attributes are attributes common to most (if not all) entities
-      in the #StylePrint grouping.
+      in the #StylePrintTable grouping.
     </para>
   </formalpara>
   <para>

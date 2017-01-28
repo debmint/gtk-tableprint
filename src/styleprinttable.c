@@ -76,7 +76,7 @@ see <http://www.gnu.org/licenses/>.
  * of the file containing the xml specification for the output.
  *
  * Finally, note that manually setting up the data to print might be quite
- * tedious, so #StylePrinTable can be extended with subclasses that provide
+ * tedious, so #StylePrintTable can be extended with subclasses that provide
  * this data. The most common source of the data is a database, so extensions
  * can be provided.  Two such extensions have already been provided -
  * #StylePrintPg (retrieve data from a Postgresql database) and #StylePrintMy
@@ -1175,10 +1175,6 @@ render_cell (StylePrintTable *self, CELLINF *cell, int rownum,
 
         g_object_unref (layout);
     }
-    else
-    {
-        fprintf (stderr, "---Empty data for column: %s\n", cell->celltext);
-    }
 
     if (deletecelltext)
     {
@@ -1483,8 +1479,8 @@ render_header (StylePrintTable *self, GRPINF *curhdr)
         }
 
         render_row_grp (self, curhdr->celldefs,
-                            curhdr->padding, curhdr->borderstyle, priv->layout,
-                            priv->datarow, priv->datarow + 1);
+                        curhdr->padding, curhdr->borderstyle, priv->layout,
+                        priv->datarow, priv->datarow + 1);
     }
 
     if (curhdr->pointsbelow)
@@ -1507,8 +1503,8 @@ render_header (StylePrintTable *self, GRPINF *curhdr)
 
 static void
 render_body (StylePrintTable *self,
-                GRPINF *bdy,
-                int maxrow)
+                      GRPINF *bdy,
+                         int  maxrow)
 {
     StylePrintTablePrivate *priv;
    
@@ -1517,7 +1513,7 @@ render_body (StylePrintTable *self,
     if (bdy->header)
     {
         render_header (self, bdy->header);
-    }       // if (curgrp->header)
+    }
 
     if (bdy->celldefs)
     {
@@ -1697,20 +1693,21 @@ render_page (StylePrintTable *self)
 
     if (priv->PageHeader)
     {
-        if (priv->PageHeader->celldefs)
-        {
-            if (!priv->PageHeader->cells_formatted)
-            {
-                //TODO: We may need to add in Left Margin
-                priv->xpos = 0;
-                g_ptr_array_foreach(priv->PageHeader->celldefs,
-                        (GFunc)set_col_values, self);
-                priv->PageHeader->cells_formatted = TRUE;
-            }
-
-            render_row_grp (self, priv->PageHeader->celldefs, NULL,
-                            0, priv->layout, priv->datarow, priv->datarow + 1);
-        }
+        render_header (self, priv->PageHeader);
+//        if (priv->PageHeader->celldefs)
+//        {
+//            if (!priv->PageHeader->cells_formatted)
+//            {
+//                //TODO: We may need to add in Left Margin
+//                priv->xpos = 0;
+//                g_ptr_array_foreach(priv->PageHeader->celldefs,
+//                        (GFunc)set_col_values, self);
+//                priv->PageHeader->cells_formatted = TRUE;
+//            }
+//
+//            render_row_grp (self, priv->PageHeader->celldefs, NULL,
+//                            0, priv->layout, priv->datarow, priv->datarow + 1);
+//        }
     }
     else if (!priv->pageno)       // If first page, print Docheader if present
     {
