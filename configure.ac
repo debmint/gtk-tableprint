@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.62)
+AC_PREREQ(2.69)
 AC_INIT(styleprinttable,0.1)
 AC_CONFIG_SRCDIR([src/styleprinttable.c])
 AC_CONFIG_HEADERS([config.h])
@@ -22,16 +22,13 @@ LT_INIT
 #
 
 GTK_DOC_CHECK([1.0], [--flavour no-tmpl])
-GOBJECT_INTROSPECTION_CHECK([1.30.0])
+GOBJECT_INTROSPECTION_CHECK([1.40.0])
 
 # Checks for libraries.
 AX_LIB_MYSQL()
 AM_CONDITIONAL([INCLUDE_MYSQL],test -n "$MYSQL_VERSION")
 AX_LIB_POSTGRESQL()
 AM_CONDITIONAL([INCLUDE_POSTGRESQL],test -n "$POSTGRESQL_VERSION")
-
-AC_FUNC_MALLOC
-#AC_PROG_RANLIB
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h])

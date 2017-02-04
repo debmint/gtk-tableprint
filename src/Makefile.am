@@ -5,12 +5,12 @@ AM_CPPFLAGS = -g -Wall `pkg-config --cflags gtk+-3.0 libpq` \
 AM_LDFLAGS = -g -Wall @noundef@ @MYSQL_LDFLAGS@ `pkg-config --libs gtk+-3.0 libpq`\
 			 @POSTGRESQL_LDFLAGS@
 
-IR_SCANFLAGS = @MYSQL_CFLAGS@ @POSTGRESQL_CPPFLAGS@
+IR_SCANFLAGS = @MYSQL_CFLAGS@ @POSTGRESQL_CPPFLAGS@ -I$(srcdir)
 
 lib_LTLIBRARIES	= libstyleprinttable.la
 libstyleprinttable_la_SOURCES = styleprinttable.c
 
-source_h = styleprinttable.h $(NULL)
+source_h = styleprinttable.h
 
 include_HEADERS = styleprinttable.h
 
@@ -26,10 +26,9 @@ source_h += styleprintmy.h
 include_HEADERS += styleprintmy.h
 endif
 
-source_h += $(NULL)
 styleprinttableincludedir = $(srcdir)
 
-styleprinttableinclude_DATA = $(source_h) $(NULL)
+styleprinttableinclude_DATA = $(source_h)
 
 EXTRA_DIST = styleprinttablepriv.h
 
@@ -45,7 +44,7 @@ introspection_sources = $(libstyleprinttable_la_SOURCES)
 StylePrint-1.0-gir: libstyleprinttable.la
 StylePrint_1_0_gir_INCLUDES = Gtk-3.0
 StylePrint_1_0_gir_CFLAGS = $(IR_SCANFLAGS)
-StylePrint_1_0_gir_LIBS =libstyleprinttable.la
+StylePrint_1_0_gir_LIBS = libstyleprinttable.la
 StylePrint_1_0_gir_FILES = $(introspection_sources) $(include_HEADERS)
 StylePrint_1_0_gir_NAMESPACE = StylePrint
 INTROSPECTION_GIRS += StylePrint-1.0.gir

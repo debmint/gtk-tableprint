@@ -101,7 +101,7 @@ expand_content_files= 	\
 # e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 GTKDOC_CFLAGS=
-GTKDOC_LIBS=${top_srcdir}/src/libstyleprinttable.la @MYSQL_LDFLAGS@ @POSTGRESQL_LDFLAGS@
+GTKDOC_LIBS=${top_builddir}/src/libstyleprinttable.la @MYSQL_LDFLAGS@ @POSTGRESQL_LDFLAGS@
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 include $(top_srcdir)/gtk-doc.make
