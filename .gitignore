@@ -55,3 +55,4 @@ StylePrint.prerequisites
 StylePrint.signals
 StylePrint.interfaces
 StylePrint-decl*
+StylePrint-scan.c
