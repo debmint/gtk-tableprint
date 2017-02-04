@@ -26,28 +26,23 @@ source_h += styleprintmy.h
 include_HEADERS += styleprintmy.h
 endif
 
-styleprinttableincludedir = $(srcdir)
-
-styleprinttableinclude_DATA = $(source_h)
-
 EXTRA_DIST = styleprinttablepriv.h
 
 CLEANFILES =
 
+if HAVE_INTROSPECTION
 -include $(INTROSPECTION_MAKEFILE)
-INTROSPECTION_GIRS = StylePrint_1_0_gir
+INTROSPECTION_GIRS = StylePrint-1.0.gir
 INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --warn-all
 
-if HAVE_INTROSPECTION
 introspection_sources = $(libstyleprinttable_la_SOURCES)
 
-StylePrint-1.0-gir: libstyleprinttable.la
+StylePrint-1.0.gir: $(lib_LTLIBRARIES)
 StylePrint_1_0_gir_INCLUDES = Gtk-3.0
 StylePrint_1_0_gir_CFLAGS = $(IR_SCANFLAGS)
-StylePrint_1_0_gir_LIBS = libstyleprinttable.la
+StylePrint_1_0_gir_LIBS = $(lib_LTLIBRARIES)
 StylePrint_1_0_gir_FILES = $(introspection_sources) $(include_HEADERS)
 StylePrint_1_0_gir_NAMESPACE = StylePrint
-INTROSPECTION_GIRS += StylePrint-1.0.gir
 
 girdir = $(datadir)/gir-1.0
 gir_DATA = $(INTROSPECTION_GIRS)
