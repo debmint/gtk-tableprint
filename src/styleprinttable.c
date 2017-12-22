@@ -178,17 +178,15 @@ htlist(gchar *key,gchar *val, gpointer usrdat)
 }
 
 void
-arylist (GHashTable *ht, gpointer udat)
+arylist (gchar *val, gpointer udat)
 {
-    gchar *val;
-    val = (gchar *)g_hash_table_lookup(ht,"who");
     if (val)
     {
         fprintf(stderr, "%s", val);
     }
     else
     {
-        fprintf(stderr, "---");
+        fprintf(stderr, "???");
     }
     fprintf(stderr,"\n");
 }
@@ -196,7 +194,7 @@ arylist (GHashTable *ht, gpointer udat)
 /**
  * style_print_table_greet:
  * @self: The StylePrintTable
- * @ary: (element-type GHashTable): The array to parse
+ * @ary: (element-type gchararray): The array to parse
  *
  * This is only a temporary function to do tests, and will be deleted
  * later on.
@@ -205,7 +203,23 @@ arylist (GHashTable *ht, gpointer udat)
 void
 style_print_table_greet (StylePrintTable *self,GPtrArray *ary)
 {
-        g_ptr_array_foreach(ary,(GFunc)arylist, NULL);
+    gchar **ptr = (gchar **)(ary->pdata);
+    gint idx;
+    fprintf (stderr, "\nThere are %d elements in the array\n", ary->len);
+    //g_ptr_array_foreach(ary,(GFunc)arylist, NULL);
+    for (idx=0; idx < ary->len; idx++)
+    {
+        if (*ptr)
+        {
+            fprintf (stderr, "%s", *(ptr++));
+        }
+        else
+        {
+            fprintf (stderr, "+++");
+            ++ptr;
+        }
+        fprintf(stderr, "\n");
+    }
 }
 
 static void

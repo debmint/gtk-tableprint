@@ -221,7 +221,7 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
         return NULL;
     }
 
-    if (self->qryParams == NULL)
+    if (params == NULL)
     {
         rslt = PQexec (self->conn, qry);
     }
@@ -229,9 +229,9 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
     {
         rslt = PQexecParams(self->conn,
                     qry,
-                    self->qryParams->len,
+                    params->len,
                     NULL,       // paramTypes not used
-                    (const gchar **)self->qryParams->pdata,// Array of params
+                    (const gchar **)params->pdata,// Array of params
                     NULL,       // list of parameter lengths -ignore
                     NULL,
                     0);         // returned formats - make all text
@@ -274,10 +274,11 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
 }
 
 /**
- * style_print_pg_from_xmlfile:
+ * style_print_pg_fromxmlfile:
  * @pgprnt: The StylePrintPg
  * @win: (nullable): The parent window - NULL if none
- * @qry: The query that will retrieve the data 
+ * @qry: The query that will retrieve the data
+ * @params: (nullable) (element-type utf8): Parameters for the query
  * @filename: The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is
@@ -285,15 +286,16 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
  */
 
 void
-style_print_pg_from_xmlfile ( StylePrintPg *pgprnt,
+style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
                                  GtkWindow *win,
                                const gchar *qry,
+                                 GPtrArray *params,
                                       char *filename)
 {
     GPtrArray *data;
 
     style_print_table_set_wmain (STYLE_PRINT_TABLE(pgprnt), win);
-    data = qry_get_data (pgprnt, qry, NULL);
+    data = qry_get_data (pgprnt, qry, params);
 
     if (data)
     {
@@ -303,10 +305,11 @@ style_print_pg_from_xmlfile ( StylePrintPg *pgprnt,
 }
 
 /**
- * style_print_pg_from_xmlstring:
+ * style_print_pg_fromxmlstring:
  * @pgprnt: The #StylePrintPg
  * @win: (nullable): The parent window - NULL if none
  * @qry: The query that will retrieve the data 
+ * @params: (nullable) (element-type utf8): Parameters for the query
  * @xmlstr: Pointer to the string containing the xml formatting
  *
  * Print a table where the definition for the format is contained in an
@@ -315,15 +318,16 @@ style_print_pg_from_xmlfile ( StylePrintPg *pgprnt,
  */
 
 void
-style_print_pg_from_xmlstring ( StylePrintPg *pgprnt,
-                                   GtkWindow *win,
-                                 const gchar *qry,
-                                        char *xmlstr)
+style_print_pg_fromxmlstring ( StylePrintPg  *pgprnt,
+                                   GtkWindow  *win,
+                                 const gchar  *qry,
+                                   GPtrArray  *params,
+                                        char  *xmlstr)
 {
     GPtrArray *data;
 
     style_print_table_set_wmain (STYLE_PRINT_TABLE(pgprnt), win);
-    data = qry_get_data (pgprnt, qry, NULL);
+    data = qry_get_data (pgprnt, qry, params);
 
     if (data)
     {

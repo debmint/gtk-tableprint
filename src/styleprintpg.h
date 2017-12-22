@@ -51,14 +51,16 @@ struct _StylePrintPgClass
 StylePrintPg * style_print_pg_new (void);
 gint style_print_pg_connect (StylePrintPg *self, gchar *dbn);
 
-void style_print_pg_from_xmlfile ( StylePrintPg *pgprnt,
+void style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
                                       GtkWindow *win,
                                     const gchar *qry,
+                                      GPtrArray *params,
                                            char *filename);
 
-void style_print_pg_from_xmlstring ( StylePrintPg *pgprnt,
+void style_print_pg_fromxmlstring ( StylePrintPg *pgprnt,
                                         GtkWindow *win,
                                       const gchar *qry,
+                                        GPtrArray *params,
                                              char *xmlstr);
 void style_print_pg_do ( StylePrintPg *self, const gchar *qry);
 void style_print_pg_appendParam ( StylePrintPg *self, const gchar *param);
