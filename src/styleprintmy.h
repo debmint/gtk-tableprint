@@ -58,15 +58,17 @@ gint style_print_my_connect (StylePrintMy *self,
                              const gchar  *unix_socket,
                              unsigned long client_flag);
 
-void style_print_my_from_xmlfile ( StylePrintMy *myprnt,
+void style_print_my_fromxmlfile ( StylePrintMy *myprnt,
                                       GtkWindow *win,
                                     const gchar *qry,
+                                      GPtrArray *params,
                                            char *filename);
 
-void style_print_my_from_xmlstring ( StylePrintMy *myprnt,
-                                        GtkWindow *win,
-                                      const gchar *qry,
-                                             char *xmlstr);
+void style_print_my_fromxmlstring ( StylePrintMy *myprnt,
+                                       GtkWindow *win,
+                                     const gchar *qry,
+                                       GPtrArray *params,
+                                            char *xmlstr);
 void style_print_my_do ( StylePrintMy *self, const gchar *qry);
 void style_print_my_appendParam ( StylePrintMy *self, const gchar *param);
 gint style_print_my_select_db (StylePrintMy *self, const gchar *db);

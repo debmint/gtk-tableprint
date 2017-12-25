@@ -23,6 +23,7 @@ see <http://www.gnu.org/licenses/>.
  * $Id::                                                                    $
  * ************************************************************************ */
 
+#include <string.h>
 #include <libpq-fe.h>
 #include "styleprintmy.h"
 
@@ -37,7 +38,7 @@ see <http://www.gnu.org/licenses/>.
  * #GHashTable 's representing each row of data.
  *
  * #StylePrintMy enables one to retrieve the data from a MySql database
- * and organize this data into a form recognizable by #StylePrintTable. 
+ * and organize this data into a form recognizable by #StylePrintTable.
  */
 
 struct _StylePrintMy
@@ -45,19 +46,23 @@ struct _StylePrintMy
     StylePrintTable parent_instance;
 
     /*< private >*/
-    MYSQL     *MYconn;
+    MYSQL     MYconn;
     GPtrArray *qryParams;
 };
 
 G_DEFINE_TYPE(StylePrintMy, style_print_my, STYLE_PRINT_TYPE_TABLE)
 
-static GPtrArray * qry_get_data (StylePrintMy *self,
-                                  const gchar *qry,
-                                    GPtrArray *params);
+static GPtrArray * qry_get_data_direct (StylePrintMy *self,
+                                         const gchar *qry,
+                                           GPtrArray *params);
+
+static GPtrArray * qry_get_data_params (StylePrintMy *self,
+                                         const gchar *qry,
+                                           GPtrArray *params);
 void
 style_print_my_init (StylePrintMy *my)
 {
-    my->MYconn = NULL;
+    //my->MYconn = NULL;
     my->qryParams = NULL;
     //my->myresult = NULL;
 }
@@ -130,18 +135,24 @@ style_print_my_connect (StylePrintMy *self,
                         unsigned long client_flag)
 {
     // FIXME: Check for connection;
-    if (self->MYconn)
-    {
-        mysql_close (self->MYconn);
-        self->MYconn = NULL;
-    }
+//    if (self->MYconn)
+//    {
+//        mysql_close (self->MYconn);
+//        self->MYconn = NULL;
+//    }
 
-    self->MYconn = mysql_init (NULL);
+    mysql_init (&(self->MYconn));
 
-    if ( ! (self->MYconn = mysql_real_connect (self->MYconn, host, user,
-                passwd, db, port, unix_socket, client_flag)))
+//    if (!self-MYconn)
+//    {
+//        fprintf(stderr,"Could not init MySQL connection.. aborting\n");
+//        return NULL;
+//    }
+
+    if (!mysql_real_connect (&(self->MYconn), host, user,
+                passwd, db, port, unix_socket, client_flag))
     {
-        report_err (self, mysql_error (self->MYconn));
+        report_err (self, mysql_error (&(self->MYconn)));
         return 0;
     }
 
@@ -189,9 +200,9 @@ style_print_my_select_db (StylePrintMy *self, const gchar *db)
 {
     gint status;
 
-    if ((status = mysql_select_db (self->MYconn, db)))
+    if ((status = mysql_select_db (&(self->MYconn), db)))
     {
-        report_err (self, mysql_error (self->MYconn));
+        report_err (self, mysql_error (&(self->MYconn)));
     }
 
     return status;
@@ -201,7 +212,7 @@ style_print_my_select_db (StylePrintMy *self, const gchar *db)
  * style_print_my_do:
  * @self: The #StylePrintMy *
  * @qry: The query to execute
- * 
+ *
  * Execute a non-data-returning query on the database
  * If parameters are used, they must be previously set
  */
@@ -211,9 +222,9 @@ style_print_my_do (StylePrintMy *self, const gchar * qry)
 {
 
 
-    if (mysql_query (self->MYconn, qry))
+    if (mysql_query (&(self->MYconn), qry))
     {
-        report_err (self, mysql_error (self->MYconn));
+        report_err (self, mysql_error (&(self->MYconn)));
         return;
     }
 
@@ -239,11 +250,185 @@ free_string (GString *str)
 
 /* ==================================================================== *
  * Retrieve data from the database and convert it to format expected    *
- * by StylePrintTable.                                                  *
+ * by StylePrintTable where query is a prepared statement with separate *
+ * parameters.                                                          *
  * ==================================================================== */
 
 static GPtrArray *
-qry_get_data (StylePrintMy *self, const gchar *qry, GPtrArray *params)
+qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
+{
+    MYSQL_STMT   *stmt;
+    MYSQL_BIND   *inBinds, *outBinds;
+    MYSQL_RES    *prepare_meta_result;
+    unsigned int  param_count, numCols;
+    GPtrArray    *colnames,
+                 *data;
+    GPtrArray    *inLens = g_ptr_array_new();
+    GPtrArray    *is_null = g_ptr_array_new();
+    GPtrArray    *length = g_ptr_array_new();
+    GPtrArray    *error = g_ptr_array_new();
+             int curCol;
+
+//    if ( ! self->MYconn)
+//    {
+//        fprintf (stderr, "No connection to database\n");
+//        return NULL;
+//    }
+
+    stmt = mysql_stmt_init (&(self->MYconn));
+
+    if (!stmt)
+    {
+        fprintf(stderr, "mysql_stmt_init(): out of memory\n");
+        return NULL;
+    }
+
+    if (mysql_stmt_prepare (stmt, qry, strlen(qry)))
+    {
+        fprintf (stderr, "mysql_stmt_prepare(), SELECT failed\n");
+        fprintf (stderr, " %s\n", mysql_stmt_error (stmt));
+        return NULL;
+    }
+
+    param_count = mysql_stmt_param_count (stmt);
+
+    if (! param_count)
+    {
+        fprintf (stderr, " Statement returns no rows!\n");
+        return NULL;
+    }
+
+    prepare_meta_result = mysql_stmt_result_metadata (stmt);
+
+    if (!prepare_meta_result)
+    {
+        report_err (self,
+                "mysql_stmt_result_metadata(): no meta information returned\n");
+        return NULL;
+    }
+
+    numCols = mysql_num_fields (prepare_meta_result);
+    inBinds = calloc (params->len, sizeof(MYSQL_BIND));
+
+    for (curCol = 0; curCol < params->len; curCol++)
+    {
+        inBinds[curCol].buffer_type = MYSQL_TYPE_STRING;
+        inBinds[curCol].buffer = (char *)g_ptr_array_index(params, curCol);
+        inBinds[curCol].is_null = 0;
+        g_ptr_array_add (inLens, malloc(sizeof(long)));
+        inBinds[curCol].length = g_ptr_array_index (inLens, curCol);
+        *(inBinds[curCol].length) = strlen(g_ptr_array_index(inLens, curCol));
+    }
+
+    if (mysql_stmt_bind_param (stmt, inBinds))
+    {
+        char msg[500];
+        snprintf (msg, sizeof(msg), "mysql_stty_bind_params() failed:\n %s",
+                mysql_stmt_error (stmt));
+        report_err (self, msg);
+        return NULL;
+    }
+
+    if (mysql_stmt_execute (stmt))
+    {
+        char msg[500];
+        snprintf(msg, sizeof(msg),
+            "mysql_stmt_execute error:\n%s", mysql_stmt_error (stmt));
+        report_err (self, msg);
+        return NULL;
+    }
+
+    // NOTE: mysql_store_result might be used to determine this...
+    if (mysql_field_count (&(self->MYconn)) == 0)
+    {
+        report_err (self, "No data returned by query");
+        return NULL;
+    }
+
+    /* Bind the result buffers for all columns before fetching them */
+
+    outBinds = calloc (numCols, sizeof (MYSQL_BIND));
+
+    colnames = g_ptr_array_new_with_free_func ((GDestroyNotify)free_string);
+
+    for (curCol = 0; curCol < numCols; curCol++)
+    {
+        MYSQL_FIELD *myfld = mysql_fetch_field (prepare_meta_result);
+
+        g_ptr_array_add (colnames, g_strdup (myfld->name));
+        outBinds[curCol].buffer_type = MYSQL_TYPE_STRING;
+
+        if ((myfld->length) < 200)
+        {
+            outBinds[curCol].buffer_length = myfld->length;
+        }
+        else
+        {
+            outBinds[curCol].buffer_length = 200;
+        }
+
+        outBinds[curCol].buffer = malloc(outBinds[curCol].buffer_length);
+
+        g_ptr_array_add (is_null, malloc(sizeof(my_bool)));
+        outBinds[curCol].is_null = g_ptr_array_index (is_null, curCol);
+
+        g_ptr_array_add (length, malloc(sizeof(long)));
+        outBinds[curCol].length = g_ptr_array_index (length, curCol);
+
+        g_ptr_array_add (error, malloc(sizeof(my_bool)));
+        outBinds[curCol].error = g_ptr_array_index (error, curCol);
+    }
+
+    if (mysql_stmt_bind_result (stmt, outBinds))
+    {
+        report_err (self, mysql_stmt_error (stmt));
+        return NULL;
+    }
+
+    data = g_ptr_array_new ();
+
+    while (!mysql_stmt_fetch (stmt))
+    {
+        GHashTable *colhash;
+
+        colhash = g_hash_table_new_full (g_str_hash,
+                                         g_str_equal,
+                                         (GDestroyNotify)free_string,
+                                         (GDestroyNotify)free_string);
+
+        for (curCol = 0; curCol < numCols; curCol++)
+        {
+            gchar *colname;
+            colname = g_strdup (g_ptr_array_index (colnames, curCol));
+
+            g_hash_table_insert (colhash, colname,
+                        *(outBinds[curCol].is_null) ? g_strdup ("") :
+                        g_strdup ((const gchar *)outBinds[curCol].buffer));
+        }
+
+        g_ptr_array_add (data, colhash);
+    }
+
+    mysql_free_result (prepare_meta_result);
+
+    if (mysql_stmt_close (stmt))
+    {
+        report_err (self, mysql_error (&(self->MYconn)));
+    }
+
+    mysql_close (&(self->MYconn));
+    //self->MYconn = NULL;
+    return data;
+}
+
+/* ==================================================================== *
+ * Retrieve data from the database and convert it to format expected    *
+ * by StylePrintTable where query is direct inline string with no       *
+ * parameters.                                                          *
+ * ==================================================================== */
+
+static GPtrArray *
+qry_get_data_direct (StylePrintMy *self, const gchar *qry, GPtrArray *params)
 {
     MYSQL_RES   *rslt;
     MYSQL_ROW    myRow;
@@ -252,33 +437,27 @@ qry_get_data (StylePrintMy *self, const gchar *qry, GPtrArray *params)
                 *data;
     unsigned int numCols;
 
-    if ( ! self->MYconn)
+//    if ( ! self->MYconn)
+//    {
+//        fprintf (stderr, "No connection to database\n");
+//        return NULL;
+//    }
+
+    if (mysql_query (&(self->MYconn), qry))
     {
-        fprintf (stderr, "No connection to database\n");
+        report_err (self, mysql_error (&(self->MYconn)));
         return NULL;
     }
 
-    if (self->qryParams == NULL)
-    {
-        if (mysql_query (self->MYconn, qry))
-        {
-            report_err (self, mysql_error (self->MYconn));
-            return NULL;
-        }
-    }
-    else
-    {
-    }
-
     // NOTE: mysql_store_result might be used to determine this...
-    if (mysql_field_count (self->MYconn) == 0)
+    if (mysql_field_count (&(self->MYconn)) == 0)
     {
         report_err (self, "No data returned by query");
         return NULL;
     }
 
     // If we get here, then we have data.  Now convert to GPtrArray->hash
-    rslt = mysql_use_result (self->MYconn);
+    rslt = mysql_use_result (&(self->MYconn));
     numCols = mysql_num_fields (rslt);
 
     // Populate the column names array
@@ -310,21 +489,22 @@ qry_get_data (StylePrintMy *self, const gchar *qry, GPtrArray *params)
             g_hash_table_insert (colhash, colname,
                             g_strdup ((const gchar *)myRow[col]));
         }
-        
+
         g_ptr_array_add (data, colhash);
     }
 
     mysql_free_result (rslt);
-    mysql_close (self->MYconn);
-    self->MYconn = NULL;
+    mysql_close (&(self->MYconn));
+    //self->MYconn = NULL;
     return data;
 }
 
 /**
- * style_print_my_from_xmlfile:
+ * style_print_my_fromxmlfile:
  * @myprnt: The StylePrintMy
  * @win: (nullable): The parent window - NULL if none
- * @qry: The query that will retrieve the data 
+ * @qry: The query that will retrieve the data
+ * @params: (nullable) (element-type utf8): Parameters for the query
  * @filename: The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is
@@ -332,15 +512,24 @@ qry_get_data (StylePrintMy *self, const gchar *qry, GPtrArray *params)
  */
 
 void
-style_print_my_from_xmlfile ( StylePrintMy *myprnt,
+style_print_my_fromxmlfile ( StylePrintMy *myprnt,
                                  GtkWindow *win,
                                const gchar *qry,
+                                 GPtrArray *params,
                                       char *filename)
 {
     GPtrArray *data;
 
     style_print_table_set_wmain (STYLE_PRINT_TABLE(myprnt), win);
-    data = qry_get_data (myprnt, qry, NULL);
+
+    if (params)
+    {
+        data = qry_get_data_params (myprnt, qry, params);
+    }
+    else
+    {
+        data = qry_get_data_direct (myprnt, qry, NULL);
+    }
 
     if (data)
     {
@@ -350,10 +539,11 @@ style_print_my_from_xmlfile ( StylePrintMy *myprnt,
 }
 
 /**
- * style_print_my_from_xmlstring:
+ * style_print_my_fromxmlstring:
  * @myprnt: The #StylePrintMy
  * @win: (nullable): The parent window - NULL if none
- * @qry: The query that will retrieve the data 
+ * @qry: The query that will retrieve the data
+ * @params: (nullable) (element-type utf8): Parameters for the query
  * @xmlstr: Pointer to the string containing the xml formatting
  *
  * Print a table where the definition for the format is contained in an
@@ -362,15 +552,24 @@ style_print_my_from_xmlfile ( StylePrintMy *myprnt,
  */
 
 void
-style_print_my_from_xmlstring ( StylePrintMy *myprnt,
+style_print_my_fromxmlstring ( StylePrintMy *myprnt,
                                    GtkWindow *win,
                                  const gchar *qry,
+                                   GPtrArray *params,
                                         char *xmlstr)
 {
     GPtrArray *data;
 
     style_print_table_set_wmain (STYLE_PRINT_TABLE(myprnt), win);
-    data = qry_get_data (myprnt, qry, NULL);
+
+    if (params)
+    {
+        data = qry_get_data_params (myprnt, qry, params);
+    }
+    else
+    {
+        data = qry_get_data_direct (myprnt, qry, NULL);
+    }
 
     if (data)
     {
