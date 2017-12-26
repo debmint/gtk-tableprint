@@ -24,6 +24,7 @@ see <http://www.gnu.org/licenses/>.
  * ************************************************************************ */
 
 #include <string.h>
+#include <stdlib.h>
 #include <libpq-fe.h>
 #include "styleprintmy.h"
 
@@ -317,7 +318,7 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
         inBinds[curCol].is_null = 0;
         g_ptr_array_add (inLens, malloc(sizeof(long)));
         inBinds[curCol].length = g_ptr_array_index (inLens, curCol);
-        *(inBinds[curCol].length) = strlen(g_ptr_array_index(inLens, curCol));
+        *(inBinds[curCol].length) = strlen(g_ptr_array_index(params, curCol));
     }
 
     if (mysql_stmt_bind_param (stmt, inBinds))
@@ -358,7 +359,7 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
         g_ptr_array_add (colnames, g_strdup (myfld->name));
         outBinds[curCol].buffer_type = MYSQL_TYPE_STRING;
 
-        if ((myfld->length) < 200)
+        if (((myfld->length) < 200) && (myfld->length > 20))
         {
             outBinds[curCol].buffer_length = myfld->length;
         }
