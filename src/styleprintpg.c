@@ -34,10 +34,16 @@ see <http://www.gnu.org/licenses/>.
  *
  * #StylePrintTable is a utility to print data in a tabular form.  However,
  * it is generic, and its data is provided in a #GPtrArray containing
- * #GHashTable 's representing each row of data.
+ * #GHashTable 's representing each row of data.  This #GPtrArray must be
+ * created and provided to #style_print_from_xmlfile or
+ * #style_print_from_xmlstring.
  *
  * #StylePrintPg enables one to retrieve the data from a PostgreSQL database
- * and organize this data into a form recognizable by #StylePrintTable. 
+ * and seamlessly print the data using #StylePrintTable.  In order to do this,
+ * the xml specification must be provided - the same as when using
+ * #style_print_table.  A query string, and optionally parameters for the
+ * query.  These paramters are presented to #style_print_pg_fromxmlfile
+ * or #style_print_pg_fromxmlstring and the data is retrieved and printed.
  */
 
 struct _StylePrintPg
@@ -278,7 +284,7 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
  * @pgprnt: The StylePrintPg
  * @win: (nullable): The parent window - NULL if none
  * @qry: The query that will retrieve the data
- * @params: (nullable) (element-type utf8): Parameters for the query
+ * @params: (nullable) (element-type utf8): Parameters for the query - NULL if none
  * @filename: The filename to open and read to get the xml definition for the printout.
  *
  * Print a tabular form where the xml definition for the output is

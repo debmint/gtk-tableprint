@@ -57,23 +57,33 @@ see <http://www.gnu.org/licenses/>.
  * contained in a #GPtrArray and formats it into columns and rows in the
  * printout.  The data can be grouped and sub-grouped, if need be.
  * This grouping is determined by the keys in the #GHashTable members
- * of the #GPtrArray.
+ * of the #GPtrArray.  These entries in the #GPtrArray must be ordered
+ * with all the members of the group together, as the program begins a
+ * new group when the entry for the field determining that group changes.
+ * If the data being printed comes from a database, this can be controlled
+ * by an "ORDER BY" clause in the query.
  * The formatting of the printout is defined by an XML document, either
- * obtained from a file, or an embedded string.
+ * provided from a file, or an embedded string.
  *
  * To print a document, you first create a #StylePrintTable object with
  * style_print_table_new().  You then begin printing by calling the
- * function style_print_table_from_xmlstring() or
- * style_print_table_from_xmlfile(), depending on the source of the xml
- * data.
+ * function #style_print_table_from_xmlstring() or
+ * #style_print_table_from_xmlfile(), depending on the source of the xml
+ * data.   (The routine to call in a database-specific module is
+ * *_fromxmlfile or *_fromxmlstring.
  *
  * Parameters to pass to the the function which are:
  * the #StylePrintTable object, a window (normally the main window)
  * is to be the parent window of any warning dialogs, etc.  This window
- * can be passed as a NULL value, in which case error messages are the sent
- * to STDERR.  Additional parameters are the PGresult of the database query,
- * and a string which represents either the pointer to the string or the name
- * of the file containing the xml specification for the output.
+ * can be passed as a NULL value, in which case error messages are then sent
+ * to STDERR.
+ *
+ * Additional parameters are the result of the database query, a pointer to
+ * a #GPtrArray containing any parameters to pass to the query if a
+ * parameterized query is being used.  If no parameters are used, this
+ * position should be NULL.   Finally, a string which represents either the
+ * pointer to the XML string or the name of the file containing the xml
+ * specification for the output.
  *
  * Finally, note that manually setting up the data to print might be quite
  * tedious, so #StylePrintTable can be extended with subclasses that provide

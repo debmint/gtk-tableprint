@@ -28,10 +28,17 @@ disabled by default.
 
 SELECTING COMPONENTS TO BUILD
 
-The primary module - which is _always_ build, is StylePrintTable.
+The primary module - which is _always_ built, is StylePrintTable.
 Additional modules for use with specific databases, are optional,
-but by default all are build.  It can be determined which are built
-by specifying certain options when ./configure is run.
+but by default all are built.
+
+These additional modules (currently StylePrint::Pg and StylePrint::My
+add the ability to directly access a Postgresql or MySQL database
+respectively bypassing the need to program the database access functions
+in the application.
+
+It can be determined which are built by specifying certain options when
+./configure is run.
 
             --with-mysql[=(yes|no|/path/to/config-prog)]
 

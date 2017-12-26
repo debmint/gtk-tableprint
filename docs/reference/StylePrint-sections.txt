@@ -5,8 +5,8 @@ STYLE_PRINT_TYPE_MY
 StylePrintMyClass
 style_print_my_new
 style_print_my_connect
-style_print_my_from_xmlfile
-style_print_my_from_xmlstring
+style_print_my_fromxmlfile
+style_print_my_fromxmlstring
 style_print_my_do
 style_print_my_appendParam
 style_print_my_select_db
