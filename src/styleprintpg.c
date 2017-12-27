@@ -209,6 +209,12 @@ style_print_pg_do (StylePrintPg *self, const gchar * qry)
     //PQclear (rslt);     // Simply discard this result
 }
 
+void
+free_data_ary (GHashTable *tbl)
+{
+    g_hash_table_destroy (tbl);
+}
+
 /* ==================================================================== *
  * Retrieve data from the database and convert it to format expected    *
  * by StylePrintTable.                                                  *
@@ -256,26 +262,29 @@ qry_get_data (StylePrintPg *self, const gchar *qry, GPtrArray *params)
     }
 
     // If we get here, then we have data.  Now convert to GPtrArray->hash
-    data = g_ptr_array_new ();
+    data = g_ptr_array_new_with_free_func ((GDestroyNotify)free_data_ary);
 
     for (row = 0; row < PQntuples (rslt); row++)
     {
         GHashTable *colhash;
         gint col;
 
-        colhash = g_hash_table_new (g_str_hash, g_str_equal);
+        colhash = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                         g_free, g_free);
 
         for (col = 0; col < PQnfields (rslt); col++)
         {
             gchar *coldata;
 
-            coldata = PQgetvalue (rslt, row, col);
-            g_hash_table_insert (colhash, PQfname (rslt, col),coldata);
+            coldata = g_strdup (PQgetvalue (rslt, row, col));
+            g_hash_table_insert (colhash,
+                    g_strdup (PQfname (rslt, col)), coldata);
         }
         
         g_ptr_array_add (data, colhash);
     }
 
+    PQclear (rslt);
     return data;
 }
 
@@ -307,6 +316,7 @@ style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
     {
         style_print_table_from_xmlfile (STYLE_PRINT_TABLE(pgprnt), win,
                                                             data, filename);
+        g_ptr_array_free (data, TRUE);
     }
 }
 
@@ -339,6 +349,7 @@ style_print_pg_fromxmlstring ( StylePrintPg  *pgprnt,
     {
         style_print_table_from_xmlstring (STYLE_PRINT_TABLE(pgprnt), win,
                                                             data, xmlstr);
+        g_ptr_array_free (data, TRUE);
     }
 }
 

@@ -1765,8 +1765,7 @@ style_print_table_draw_page (GtkPrintOperation *op,
 
     priv->pageno = page_nr;
     priv->context = context;
-    priv->pageheight =
-                    gtk_print_context_get_height (priv->context);
+    priv->pageheight = gtk_print_context_get_height (priv->context);
 //    gtk_print_STYLE_PRINT_TABLE(operation)_set_unit (operation, GTK_UNIT_POINTS);
     priv->cr = gtk_print_context_get_cairo_context (context);
     priv->layout = gtk_print_context_create_pango_layout (context);
@@ -1926,6 +1925,7 @@ style_print_table_from_xmlfile (StylePrintTable *self,
 
     //free_default_cell();
     //return STYLE_PRINT_TABLE(tbl)->grpHd; // Temporary - for debugging
+    g_markup_parse_context_free (gmp_contxt);
 }
 
 /**
@@ -1942,9 +1942,9 @@ style_print_table_from_xmlfile (StylePrintTable *self,
 
 void
 style_print_table_from_xmlstring (  StylePrintTable *self,
-                                            GtkWindow *wmain,
-                                            GPtrArray *data,
-                                                 char *xml)
+                                          GtkWindow *wmain,
+                                          GPtrArray *data,
+                                               char *xml)
 {
     GMarkupParseContext *gmp_contxt;
     GError *error;
@@ -1973,6 +1973,7 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
     reset_default_cell (self);
     render_report (self);
     free_default_cell (self);
+    g_markup_parse_context_free (gmp_contxt);
 }
 
 /**
@@ -2023,3 +2024,4 @@ style_print_table_get_wmain (StylePrintTable *self)
             style_print_table_get_instance_private (self);
     return priv->w_main;
 }
+

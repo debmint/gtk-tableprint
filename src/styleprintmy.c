@@ -238,15 +238,11 @@ style_print_my_do (StylePrintMy *self, const gchar * qry)
     //PQclear (rslt);     // Simply discard this result
 }
 
-/* -------------------------------------------------------------------- *
- * Callback function to free an element of a GPtrArray where the        *
- * element is a GString *                                               *
- * -------------------------------------------------------------------- */
-
+/* GDestroyNotify function to free the data Array */
 void
-free_string (GString *str)
+free_data_array (gpointer ht)
 {
-    g_string_free (str, TRUE);
+    g_hash_table_destroy ((GHashTable *)ht);
 }
 
 /* ==================================================================== *
@@ -264,11 +260,12 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
     unsigned int  param_count, numCols;
     GPtrArray    *colnames,
                  *data;
-    GPtrArray    *inLens = g_ptr_array_new();
-    GPtrArray    *is_null = g_ptr_array_new();
-    GPtrArray    *length = g_ptr_array_new();
-    GPtrArray    *error = g_ptr_array_new();
-             int curCol;
+    GPtrArray    *inLens = g_ptr_array_new_with_free_func(g_free);
+    GPtrArray    *is_null = g_ptr_array_new_with_free_func(g_free);
+    GPtrArray    *length = g_ptr_array_new_with_free_func(g_free);
+    GPtrArray    *error = g_ptr_array_new_with_free_func(g_free);
+
+     int curCol;
 
 //    if ( ! self->MYconn)
 //    {
@@ -309,14 +306,15 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
     }
 
     numCols = mysql_num_fields (prepare_meta_result);
-    inBinds = calloc (params->len, sizeof(MYSQL_BIND));
+    inBinds = g_malloc (params->len * sizeof(MYSQL_BIND));
+    memset (inBinds, 0, params->len * sizeof(MYSQL_BIND));
 
     for (curCol = 0; curCol < params->len; curCol++)
     {
         inBinds[curCol].buffer_type = MYSQL_TYPE_STRING;
         inBinds[curCol].buffer = (char *)g_ptr_array_index(params, curCol);
         inBinds[curCol].is_null = 0;
-        g_ptr_array_add (inLens, malloc(sizeof(long)));
+        g_ptr_array_add (inLens, g_malloc(sizeof(long)));
         inBinds[curCol].length = g_ptr_array_index (inLens, curCol);
         *(inBinds[curCol].length) = strlen(g_ptr_array_index(params, curCol));
     }
@@ -348,9 +346,11 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
 
     /* Bind the result buffers for all columns before fetching them */
 
-    outBinds = calloc (numCols, sizeof (MYSQL_BIND));
+    outBinds = g_malloc (numCols * sizeof (MYSQL_BIND));
+    memset (outBinds, 0, numCols * sizeof (MYSQL_BIND));
 
-    colnames = g_ptr_array_new_with_free_func ((GDestroyNotify)free_string);
+    colnames = g_ptr_array_new_with_free_func (g_free);
+    //colnames = g_ptr_array_new_with_free_func ((GDestroyNotify)free_gchararray);
 
     for (curCol = 0; curCol < numCols; curCol++)
     {
@@ -368,15 +368,15 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
             outBinds[curCol].buffer_length = 200;
         }
 
-        outBinds[curCol].buffer = malloc(outBinds[curCol].buffer_length);
+        outBinds[curCol].buffer = g_malloc(outBinds[curCol].buffer_length);
 
-        g_ptr_array_add (is_null, malloc(sizeof(my_bool)));
+        g_ptr_array_add (is_null, g_malloc(sizeof(my_bool)));
         outBinds[curCol].is_null = g_ptr_array_index (is_null, curCol);
 
-        g_ptr_array_add (length, malloc(sizeof(long)));
+        g_ptr_array_add (length, g_malloc(sizeof(long)));
         outBinds[curCol].length = g_ptr_array_index (length, curCol);
 
-        g_ptr_array_add (error, malloc(sizeof(my_bool)));
+        g_ptr_array_add (error, g_malloc(sizeof(my_bool)));
         outBinds[curCol].error = g_ptr_array_index (error, curCol);
     }
 
@@ -386,23 +386,21 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
         return NULL;
     }
 
-    data = g_ptr_array_new ();
+    data = g_ptr_array_new_with_free_func ((GDestroyNotify)free_data_array);
 
     while (!mysql_stmt_fetch (stmt))
     {
         GHashTable *colhash;
 
         colhash = g_hash_table_new_full (g_str_hash,
-                                         g_str_equal,
-                                         (GDestroyNotify)free_string,
-                                         (GDestroyNotify)free_string);
+                                         g_str_equal, g_free, g_free);
+                                         //(GDestroyNotify)free_gchararray,
+                                         //(GDestroyNotify)free_gchararray);
 
         for (curCol = 0; curCol < numCols; curCol++)
         {
-            gchar *colname;
-            colname = g_strdup (g_ptr_array_index (colnames, curCol));
-
-            g_hash_table_insert (colhash, colname,
+            g_hash_table_insert (colhash,
+                        g_strdup (g_ptr_array_index (colnames, curCol)),
                         *(outBinds[curCol].is_null) ? g_strdup ("") :
                         g_strdup ((const gchar *)outBinds[curCol].buffer));
         }
@@ -411,6 +409,20 @@ qry_get_data_params (StylePrintMy *self, const gchar *qry, GPtrArray *params)
     }
 
     mysql_free_result (prepare_meta_result);
+    g_ptr_array_free (inLens, TRUE);
+    g_ptr_array_free (is_null, TRUE);
+    g_ptr_array_free (length, TRUE);
+    g_ptr_array_free (error, TRUE);
+    g_ptr_array_free (colnames, TRUE);
+    g_free (inBinds);
+
+    // Free the Buffer areas for outBinds
+    for (curCol = 0; curCol < numCols; curCol++)
+    {
+        g_free (outBinds[curCol].buffer);
+    }
+
+    g_free (outBinds);
 
     if (mysql_stmt_close (stmt))
     {
@@ -463,14 +475,14 @@ qry_get_data_direct (StylePrintMy *self, const gchar *qry, GPtrArray *params)
 
     // Populate the column names array
 
-    colnames = g_ptr_array_new_with_free_func ((GDestroyNotify)free_string);
+    colnames = g_ptr_array_new_with_free_func (g_free);
 
     while ((myField = mysql_fetch_field (rslt)))
     {
         g_ptr_array_add (colnames, g_strdup (myField->name));
     }
 
-    data = g_ptr_array_new ();
+    data = g_ptr_array_new_with_free_func ((GDestroyNotify)free_data_array);
 
     while ((myRow = mysql_fetch_row (rslt)))
     {
@@ -479,8 +491,8 @@ qry_get_data_direct (StylePrintMy *self, const gchar *qry, GPtrArray *params)
 
         colhash = g_hash_table_new_full (g_str_hash,
                                          g_str_equal,
-                                         (GDestroyNotify)free_string,
-                                         (GDestroyNotify)free_string);
+                                         g_free,
+                                         g_free);
 
         for (col = 0; col < numCols; col++)
         {
@@ -536,6 +548,7 @@ style_print_my_fromxmlfile ( StylePrintMy *myprnt,
     {
         style_print_table_from_xmlfile (STYLE_PRINT_TABLE(myprnt), win,
                                                             data, filename);
+        g_ptr_array_free (data, TRUE);
     }
 }
 
@@ -576,6 +589,7 @@ style_print_my_fromxmlstring ( StylePrintMy *myprnt,
     {
         style_print_table_from_xmlstring (STYLE_PRINT_TABLE(myprnt), win,
                                                             data, xmlstr);
+        g_ptr_array_free (data, TRUE);
     }
 }
 
