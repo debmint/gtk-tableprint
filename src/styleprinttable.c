@@ -113,7 +113,7 @@ struct _StylePrintTablePrivate
     double pageheight;
     gint TotPages;           // Total Pages
     GtkPageSetup *Page_Setup;
-    GPtrArray *PageEndRow;  // Last Data Row for each page.
+    GArray *PageEndRow;  // Last Data Row for each page.
     gboolean DoPrint;       // Flag that we want to actually print (pass 2)
     cairo_t *cr;            // The Cairo Print Context
     GtkPrintContext *context;
@@ -174,6 +174,20 @@ char *GroupElements[] = {"pageheader", "group", "body", NULL};
 gboolean Formatted = FALSE;
 //PangoFontDescription *DefaultPangoFont;
 PGRPINF FmtList;    // The formatting tree;
+
+void
+free_celldef (CELLINF *cell)
+{
+    if (cell->pangofont)
+    {
+        pango_font_description_free (cell->pangofont);
+    }
+
+    g_free (cell->font);
+    g_free (cell->celltext);
+
+    g_free (cell);
+}
 
 GMarkupParser prsr = {start_element_main, end_element_main, NULL,
                         NULL, prs_err};
@@ -479,11 +493,12 @@ append_cell_def (StylePrintTable *self, const gchar **attrib_names,
     {
         if (!(cellary = parentgrp->celldefs))
         {
-            parentgrp->celldefs = g_ptr_array_new();
+            parentgrp->celldefs = g_ptr_array_new_with_free_func (
+                    (GDestroyNotify)free_celldef);
         }
     }
 
-    mycell = calloc (1, sizeof(CELLINF));
+    mycell = g_malloc0 (sizeof(CELLINF));
     mycell->grptype = GRPTY_CELL;
     mycell->padleft = CELLPAD_DFLT;
     mycell->padright = CELLPAD_DFLT;
@@ -522,7 +537,7 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
 {
     StylePrintTablePrivate *priv;
     int grpidx = 0;
-    GRPINF *newgrp = calloc (1, sizeof(GRPINF));
+    GRPINF *newgrp = g_malloc0 (sizeof(GRPINF));
    
     priv = style_print_table_get_instance_private (self);
 
@@ -536,7 +551,7 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     }
 
     newgrp->grptype = grptype;
-    newgrp->font = malloc (sizeof(FONTINF));
+    newgrp->font = g_malloc0 (sizeof(FONTINF));
 
     if (parent && parent->font)
     {
@@ -688,7 +703,7 @@ start_element_main (GMarkupParseContext *context,
     {
         if (!(priv->defaultcell))
         {
-            priv->defaultcell = calloc (1, sizeof (CELLINF));
+            priv->defaultcell = g_malloc0 (sizeof (CELLINF));
         }
 
         add_cell_attribs (priv->defaultcell, attrib_names, attrib_vals);
@@ -744,7 +759,7 @@ start_element_main (GMarkupParseContext *context,
         }
         else
         {
-            font_me = calloc (1, sizeof(FONTINF));
+            font_me = g_malloc0 (sizeof(FONTINF));
             cur_grp->font = font_me;
             font_me->grptype = GRPTY_FONT;
             // Set numeric values to -1 to flag not set
@@ -807,7 +822,7 @@ start_element_main (GMarkupParseContext *context,
 
         if (!prnt->padding)
         {
-            prnt->padding = calloc (1, sizeof(ROWPAD));
+            prnt->padding = g_malloc0(sizeof(ROWPAD));
             // Init all to -1 to flag "not set"
             prnt->padding->left = -1;
             prnt->padding->right = -1;
@@ -826,7 +841,7 @@ start_element_main (GMarkupParseContext *context,
 
         if (! priv->DefaultPadding)
         {
-            priv->DefaultPadding = calloc (1, sizeof(ROWPAD));
+            priv->DefaultPadding = g_malloc0 (sizeof(ROWPAD));
         }
 
         priv->DefaultPadding = set_padding_attribs (
@@ -925,7 +940,7 @@ set_page_defaults (StylePrintTable *self)
 
     if (! priv->defaultcell)
     {
-        priv->defaultcell = calloc (1, sizeof(CELLINF));
+        priv->defaultcell = g_malloc0 (sizeof(CELLINF));
         priv->defaultcell->grptype = GRPTY_CELL;
     }
 
@@ -937,11 +952,11 @@ set_page_defaults (StylePrintTable *self)
 
     if (!priv->defaultcell->font)
     {
-        priv->defaultcell->font = calloc (1, sizeof(FONTINF));
+        priv->defaultcell->font = g_malloc0 (sizeof(FONTINF));
     }
 
-    priv->defaultcell->font->family =
-        (char *)pango_font_description_get_family (priv->defaultcell->pangofont);
+    priv->defaultcell->font->family = g_strdup (
+        pango_font_description_get_family (priv->defaultcell->pangofont));
     priv->defaultcell->font->style =
         pango_font_description_get_style (priv->defaultcell->pangofont);
     priv->defaultcell->font->size =
@@ -1708,7 +1723,7 @@ render_page (StylePrintTable *self)
 
     if (priv->DoPrint)
     {
-        lastrow = (int)g_ptr_array_index (priv->PageEndRow, priv->pageno);
+        lastrow = (int)g_array_index (priv->PageEndRow, gint, priv->pageno);
     }
     else
     {
@@ -1806,14 +1821,13 @@ style_print_table_begin_print (GtkPrintOperation *po,
     priv->textheight = log_rect.height/PANGO_SCALE;
     g_object_unref (lo);
 
-    priv->PageEndRow = g_ptr_array_new();
+    priv->PageEndRow = g_array_new (FALSE, FALSE, sizeof(gint));
 
     while ((priv->datarow) < priv->pgresult->len)
     {
         priv->ypos = 0;
         render_page (STYLE_PRINT_TABLE(po));
-        g_ptr_array_add (priv->PageEndRow,
-                (gpointer)(priv->datarow));
+        g_array_append_val (priv->PageEndRow, priv->datarow);
         ++(priv->TotPages);
     }
 
@@ -1849,7 +1863,44 @@ render_report (StylePrintTable *self)
     // Now free up everything that has been allocated...
     if (priv->PageEndRow)
     {
-        g_ptr_array_free (priv->PageEndRow, TRUE);
+        g_array_free (priv->PageEndRow, TRUE);
+        priv->PageEndRow = NULL;
+    }
+
+    if (priv->elList)
+    {
+        g_slist_free (priv->elList);
+        priv->elList = NULL;
+    }
+
+    if (priv->grpHd)
+    {
+        GRPINF *grpinf = priv->grpHd;
+
+        while (grpinf)
+        {
+            GRPINF *child;
+
+            g_free (grpinf->padding);
+            g_free (grpinf->font->family);
+            g_free (grpinf->font);
+
+            if (grpinf->pangofont)
+            {
+                pango_font_description_free (grpinf->pangofont);
+            }
+
+            if (grpinf->celldefs)
+            {
+                g_ptr_array_free (grpinf->celldefs, TRUE);
+            }
+
+            child = grpinf->grpchild;
+            g_free (grpinf);
+            grpinf = child;
+        }
+
+        priv->grpHd = NULL;
     }
 }
 
