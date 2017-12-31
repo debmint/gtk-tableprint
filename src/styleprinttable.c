@@ -149,7 +149,7 @@ static void end_element_main (GMarkupParseContext *, const gchar *,
                              gpointer, GError **);
 static void prs_err (GMarkupParseContext *, GError *, gpointer);
 static void reset_default_cell (StylePrintTable *);
-static void free_default_cell (StylePrintTable *);
+//static void free_default_cell (StylePrintTable *);
 static void set_page_defaults (StylePrintTable *);
 
 static void report_error (StylePrintTable *, gchar *);
@@ -806,19 +806,24 @@ start_element_main (GMarkupParseContext *context,
         GRPINF *prnt = parent;    // Convenience
         // TODO: parent==0 ->> error??
 
-        if (!prnt->padding)
+        if (prnt->grptype == GRPTY_GROUP)
         {
-            prnt->padding = g_malloc0(sizeof(ROWPAD));
-            // Init all to -1 to flag "not set"
-            prnt->padding->left = -1;
-            prnt->padding->right = -1;
-            prnt->padding->top = -1;
-            prnt->padding->bottom = -1;
+            if (!prnt->padding)
+            {
+                prnt->padding = g_malloc0(sizeof(ROWPAD));
+                // Init all to -1 to flag "not set"
+                prnt->padding->left = -1;
+                prnt->padding->right = -1;
+                prnt->padding->top = -1;
+                prnt->padding->bottom = -1;
+                prnt->padding = set_padding_attribs (prnt->padding,
+                                                     attrib_names,
+                                                     attrib_vals);
+            }
         }
 
-        prnt->padding = set_padding_attribs (prnt->padding, attrib_names,
-                                                            attrib_vals);
-        newgrp = prnt->padding;
+        //newgrp = prnt->padding;
+        newgrp = NULL;
        
     }
     else if (STRMATCH(element_name, "defaultpadding"))
@@ -910,21 +915,21 @@ set_page_defaults (StylePrintTable *self)
     }
 }
 
-static void
-free_default_cell (StylePrintTable *self)
-{
-    StylePrintTablePrivate *priv = 
-                style_print_table_get_instance_private (self);
-
-
-    if (priv->defaultcell->pangofont)
-    {
-        pango_font_description_free (priv->defaultcell->pangofont);
-    }
-
-    free (priv->defaultcell);
-    priv->defaultcell = NULL;
-}
+//static void
+//free_default_cell (StylePrintTable *self)
+//{
+//    StylePrintTablePrivate *priv = 
+//                style_print_table_get_instance_private (self);
+//
+//
+//    if (priv->defaultcell->pangofont)
+//    {
+//        pango_font_description_free (priv->defaultcell->pangofont);
+//    }
+//
+//    free (priv->defaultcell);
+//    priv->defaultcell = NULL;
+//}
 
 static void
 reset_default_cell (StylePrintTable *self)
@@ -1733,17 +1738,27 @@ render_report (StylePrintTable *self)
         while (grpinf)
         {
             GRPINF *child;
+            gint mytype = grpinf->grptype;
 
-            g_free (grpinf->padding);
-
-            if (grpinf->pangofont)
+            if (mytype == GRPTY_GROUP)
             {
-                pango_font_description_free (grpinf->pangofont);
+                g_free (grpinf->padding);
             }
 
-            if (grpinf->celldefs)
+            if ((mytype == GRPTY_GROUP) || (mytype == GRPTY_CELL))
             {
-                g_ptr_array_free (grpinf->celldefs, TRUE);
+                if (grpinf->pangofont)
+                {
+                    pango_font_description_free (grpinf->pangofont);
+                }
+            }
+
+            if (mytype != GRPTY_CELL)
+            {
+                if (grpinf->celldefs)
+                {
+                    g_ptr_array_free (grpinf->celldefs, TRUE);
+                }
             }
 
             child = grpinf->grpchild;
