@@ -35,24 +35,11 @@ typedef struct pg_mar {
            bottom;
 } ROWPAD, *PROWPAD;
 
-// FontInf structure - Contains individual components to build a
-// PangoFontDescription.
-
-typedef struct font_inf {
-    int grptype;          // Group-type - Must be first entry in struct
-    char *family;
-    int   size;         // Font-size in POINTS
-    PangoStyle  style;
-    PangoWeight weight;
-    PangoVariant variant;
-    PangoStretch stretch;
-} FONTINF, *PFONTINF;
-
 // This structure contains all that is needed to insert a single cell
 // Each column of a Header or Body description will contain an array of these.
 typedef struct cell_info {
     int grptype;            // Group-type - Must be FIRST entry in struct
-    PFONTINF font;          // Used to pass to library, library sets up
+    PangoFontDescription *pangofont;      // pangofont from this
     double x,               // X position for the current insert
            y;               // Y position for the current insert (not used???)
     int padleft,            // Padding for left side of cell
@@ -60,43 +47,29 @@ typedef struct cell_info {
     int borderstyle;        // Border style for group or cell
     double percent;         // percent of page width to use for this cell
     double cellwidth;       // Cell width in POINTS
-                            // pangofont from this
-    PangoFontDescription *pangofont;    // Derived from "font" pointer
     int   txtsource;        // Where to get source
     char  *celltext;        // Text to insert into the cell
     //gchar *cell_col;        // The col # for cell text (only "data" txtsource)
     PangoAlignment layoutalign;     // Justification - right/left/center
 } CELLINF, *PCELLINF;
 
-//typedef struct line_props {
-//} ROWPROP, *PROWPROP;
-
 typedef struct grp_info {
     int grptype;                    // The group-type - must be the first entry
-    PFONTINF font;                  // Ptr to FONTINF containing descriptions
+                                    // to insert into fontdescriptor
+    PangoFontDescription *pangofont; // Font to use for this group, also
+                                    // used for any cells with no font spec
     int colcount;
     int pointsabove,                // Points for space above the group hdr
         pointsbelow;                // Points for space below the group
     int borderstyle;                // Border style for group or cell
     struct grp_info *grpparent;
     struct grp_info *grpchild;      // NULL if it's body
-                                    // to insert into fontdescriptor
-    PangoFontDescription *pangofont; // Font to use for this group, also
-                                    // used for any cells with no font spec
     ROWPAD *padding;                // Padding around the row;
     struct grp_info *header;        // Display for group-type groups
-    gboolean cells_formatted;        // TRUE if cols have been reformatted 
+    gboolean cells_formatted;       // TRUE if cols have been reformatted 
     GPtrArray *celldefs;            // Pointer to CELLINF array
-    gchar *grpcol;                     // PGresult col number for group text
+    gchar *grpcol;                  // PGresult col number for group text
 } GRPINF, *PGRPINF;
-
-/*typedef struct cell_props {
-    PFONTINF font;
-    int       cellwidth,
-              cellheight;       // Not used????
-    ROWPAD     margins;
-} CELLPROPS, *PCELLPROPS;*/
-
 
 typedef struct page_def {
     int firstrow,

@@ -183,7 +183,7 @@ free_celldef (CELLINF *cell)
         pango_font_description_free (cell->pangofont);
     }
 
-    g_free (cell->font);
+    //g_free (cell->font);
     g_free (cell->celltext);
 
     g_free (cell);
@@ -488,6 +488,9 @@ append_cell_def (StylePrintTable *self, const gchar **attrib_names,
 {
     CELLINF *mycell;
     GPtrArray *cellary;
+    StylePrintTablePrivate *priv;
+   
+    priv = style_print_table_get_instance_private (self);
 
     if (parentgrp)
     {
@@ -502,6 +505,16 @@ append_cell_def (StylePrintTable *self, const gchar **attrib_names,
     mycell->grptype = GRPTY_CELL;
     mycell->padleft = CELLPAD_DFLT;
     mycell->padright = CELLPAD_DFLT;
+
+    if (parentgrp && parentgrp->pangofont)
+    {
+        mycell->pangofont = pango_font_description_copy (parentgrp->pangofont);
+    }
+    else
+    {
+        mycell->pangofont = pango_font_description_copy (
+            priv->defaultcell->pangofont);
+    }
 
     add_cell_attribs (mycell, attrib_names, attrib_vals);
 
@@ -551,16 +564,6 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
     }
 
     newgrp->grptype = grptype;
-    newgrp->font = g_malloc0 (sizeof(FONTINF));
-
-    if (parent && parent->font)
-    {
-        memcpy (newgrp->font, parent->font, sizeof(FONTINF));
-    }
-    else
-    {
-        memcpy (newgrp->font, priv->defaultcell->font, sizeof(FONTINF));
-    }
 
     if (parent && parent->pangofont)
     {
@@ -674,7 +677,6 @@ start_element_main (GMarkupParseContext *context,
 {
     StylePrintTablePrivate *priv;
     gpointer newgrp = NULL;
-    GRPINF *cur_grp;
     GRPINF *parent = NULL;
     StylePrintTable *self = STYLE_PRINT_TABLE(myself);
    
@@ -747,28 +749,6 @@ start_element_main (GMarkupParseContext *context,
     else if (STRMATCH(element_name, "font"))
     {
         int idx = 0;
-        FONTINF *font_me;
-
-        //if (!parent)
-        //{error}
-        cur_grp = parent;
-
-        if (cur_grp->font)
-        {
-            font_me = cur_grp->font;
-        }
-        else
-        {
-            font_me = g_malloc0 (sizeof(FONTINF));
-            cur_grp->font = font_me;
-            font_me->grptype = GRPTY_FONT;
-            // Set numeric values to -1 to flag not set
-            font_me->size = -1;
-            font_me->style = -1;
-            font_me->weight = -1;
-            font_me->variant = -1;
-            font_me->stretch = -1;
-        }
 
         while (attrib_names[idx])
         {
@@ -776,33 +756,39 @@ start_element_main (GMarkupParseContext *context,
 
             if ( STRMATCH(a, "family"))
             {
-                font_me->family = g_strdup (attrib_vals[idx]);
+                pango_font_description_set_family (parent->pangofont,
+                                                   attrib_vals[idx]);
             }
             else if (STRMATCH(a, "size"))
             {
-                font_me->size = strtof (attrib_vals[idx], NULL);
+                pango_font_description_set_size (parent->pangofont,
+                            atoi(attrib_vals[idx]) * PANGO_SCALE);
             }
             else if (STRMATCH(a, "style"))
             {
-                font_me->style = name_to_pango_style (a);
+                pango_font_description_set_style (parent->pangofont,
+                            name_to_pango_style (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "weight"))
             {
-                font_me->weight = name_to_pango_weight (a);
+                pango_font_description_set_weight (parent->pangofont,
+                            name_to_pango_weight (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "variant"))
             {
-                font_me->variant = name_to_pango_variant (a);
+                pango_font_description_set_variant (parent->pangofont,
+                            name_to_pango_variant (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "stretch"))
             {
-                font_me->stretch = name_to_pango_stretch (a);
+                pango_font_description_set_stretch (parent->pangofont,
+                            name_to_pango_stretch (attrib_vals[idx]));
             }
 
             ++idx;
         }
 
-        newgrp = cur_grp->font;
+        newgrp = NULL;
     }
     else if (STRMATCH(element_name, "pageheader"))
     {
@@ -885,49 +871,6 @@ end_element_main (GMarkupParseContext  *context,
 //            || STRMATCH(element_name, "priv->defaultcell")
 //            || STRMATCH(element_name, "pageheader"))
 
-    // Set the PangoFontDescription
-//    if (STRMATCH(element_name, "cell"))
-//    {
-//        PFONTINF fi;
-//        CELLINF *cell = (CELLINF *)ptr;
-//
-//        if (!(cell->pangofont))
-//        {
-//            cell->pangofont =
-//                pango_font_description_copy (priv->defaultcell->pangofont);
-//        }
-//
-//        if ((fi = cell->font))
-//        {
-//            if (fi->family)
-//            {
-//                pango_font_description_set_family (cell->pangofont,
-//                        fi->family);
-//            }
-//
-//            if (fi->size)
-//            {
-//                if (!cell->pangofont)
-//                {
-//                    printf ("Cannot set Font Size %d\n", fi->size);
-//                }
-//                pango_font_description_set_size (cell->pangofont,
-//                        fi->size * PANGO_SCALE);
-//            }
-//
-//            if (fi->style)
-//            {
-//                pango_font_description_set_style (cell->pangofont,
-//                        fi->style);
-//            }
-//
-//            if (fi->weight)
-//            {
-//                pango_font_description_set_weight (cell->pangofont,
-//                        fi->weight);
-//            }
-//        }
-//    }
 }
 
 // Set up default PrintSettings
@@ -949,25 +892,6 @@ set_page_defaults (StylePrintTable *self)
         priv->defaultcell->pangofont = pango_font_description_from_string (
                 "Serif 10");
     }
-
-    if (!priv->defaultcell->font)
-    {
-        priv->defaultcell->font = g_malloc0 (sizeof(FONTINF));
-    }
-
-    priv->defaultcell->font->family = g_strdup (
-        pango_font_description_get_family (priv->defaultcell->pangofont));
-    priv->defaultcell->font->style =
-        pango_font_description_get_style (priv->defaultcell->pangofont);
-    priv->defaultcell->font->size =
-        pango_font_description_get_size (priv->defaultcell->pangofont);
-    priv->defaultcell->font->weight =
-        pango_font_description_get_weight (priv->defaultcell->pangofont);
-    priv->defaultcell->font->variant =
-        pango_font_description_get_variant (priv->defaultcell->pangofont);
-    priv->defaultcell->font->stretch =
-        pango_font_description_get_stretch (priv->defaultcell->pangofont);
-
 
 //    if (!DefaultPangoFont)
 //    {
@@ -992,9 +916,6 @@ free_default_cell (StylePrintTable *self)
     StylePrintTablePrivate *priv = 
                 style_print_table_get_instance_private (self);
 
-    if (priv->defaultcell->font) {
-        free (priv->defaultcell->font);
-    }
 
     if (priv->defaultcell->pangofont)
     {
@@ -1008,40 +929,9 @@ free_default_cell (StylePrintTable *self)
 static void
 reset_default_cell (StylePrintTable *self)
 {
-    StylePrintTablePrivate *priv = 
-                style_print_table_get_instance_private (self);
-    PangoFontDescription *pfd = priv->defaultcell->pangofont;
-    FONTINF *fi = priv->defaultcell->font;
-
-    if (priv->defaultcell->font->family)
-    {
-        pango_font_description_set_family (pfd, fi->family);
-    }
-
-    if (pango_font_description_get_size (pfd) != fi->size)
-    {
-        pango_font_description_set_size (pfd, fi->size * PANGO_SCALE);
-    }
-
-    if (pango_font_description_get_style (pfd) != fi->style)
-    {
-        pango_font_description_set_style(pfd, fi->style);
-    }
-
-    if (pango_font_description_get_weight (pfd) != fi->weight)
-    {
-        pango_font_description_set_weight (pfd, fi->weight);
-    }
-
-    if (pango_font_description_get_variant (pfd) != fi->variant)
-    {
-        pango_font_description_set_variant (pfd, fi->variant);
-    }
-
-    if (pango_font_description_get_stretch (pfd) != fi->stretch)
-    {
-        pango_font_description_set_stretch (pfd, fi->stretch);
-    }
+//    StylePrintTablePrivate *priv = 
+//                style_print_table_get_instance_private (self);
+    //PangoFontDescription *pfd = priv->defaultcell->pangofont;
 }
 
 /* ******************************************************************** *
@@ -1084,7 +974,7 @@ set_col_values (CELLINF *cell, StylePrintTable *self)
 static void
 set_cell_font_description (StylePrintTable * self, CELLINF *cell)
 {
-    PFONTINF fi;
+//    PFONTINF fi;
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
@@ -1099,43 +989,6 @@ set_cell_font_description (StylePrintTable * self, CELLINF *cell)
         {
             report_error (self,
                     "Failed to create Pango Font Description for Cell");
-        }
-    }
-
-
-    if ((fi = cell->font))
-    {
-        PangoFontDescription *pfd = cell->pangofont;
-
-        if (fi->family)
-        {
-            pango_font_description_set_family (pfd, fi->family);
-        }
-
-        if (fi->size != -1)
-        {
-            pango_font_description_set_size (pfd,
-                    fi->size * PANGO_SCALE);
-        }
-
-        if (fi->style != -1)
-        {
-            pango_font_description_set_style (pfd, fi->style);
-        }
-
-        if (fi->weight != -1)
-        {
-            pango_font_description_set_weight (pfd, fi->weight);
-        }
-
-        if (fi->variant != -1)
-        {
-            pango_font_description_set_variant (pfd, fi->variant);
-        }
-
-        if (fi->stretch != -1)
-        {
-            pango_font_description_set_stretch (pfd, fi->stretch);
         }
     }
 }
@@ -1882,8 +1735,6 @@ render_report (StylePrintTable *self)
             GRPINF *child;
 
             g_free (grpinf->padding);
-            g_free (grpinf->font->family);
-            g_free (grpinf->font);
 
             if (grpinf->pangofont)
             {
@@ -2023,7 +1874,7 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
 
     reset_default_cell (self);
     render_report (self);
-    free_default_cell (self);
+    //free_default_cell (self);
     g_markup_parse_context_free (gmp_contxt);
 }
 
