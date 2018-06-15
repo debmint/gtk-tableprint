@@ -575,6 +575,11 @@ allocate_new_group (StylePrintTable *self, const char **attrib_names,
                     pango_font_description_copy (priv->defaultcell->pangofont);
     }
 
+    if (parent)
+    {
+        newgrp->grpparent = parent;
+    }
+
     while (attrib_names[grpidx])
     {
         if (STRMATCH(attrib_names[grpidx], "groupsource"))
@@ -729,7 +734,7 @@ start_element_main (GMarkupParseContext *context,
         if (parent)
         {
             newgrp = allocate_new_group (self,
-                        attrib_names, attrib_vals, NULL, GRPTY_HEADER);
+                        attrib_names, attrib_vals, parent, GRPTY_HEADER);
             ((GRPINF *)parent)->header = newgrp;
         }
     }
