@@ -758,42 +758,43 @@ start_element_main (GMarkupParseContext *context,
         while (attrib_names[idx])
         {
             const char *a = attrib_names[idx];
+            newgrp = parent->pangofont;
 
             if ( STRMATCH(a, "family"))
             {
-                pango_font_description_set_family (parent->pangofont,
+                pango_font_description_set_family (newgrp,
                                                    attrib_vals[idx]);
             }
             else if (STRMATCH(a, "size"))
             {
-                pango_font_description_set_size (parent->pangofont,
+                pango_font_description_set_size (newgrp,
                             atoi(attrib_vals[idx]) * PANGO_SCALE);
             }
             else if (STRMATCH(a, "style"))
             {
-                pango_font_description_set_style (parent->pangofont,
+                pango_font_description_set_style (newgrp,
                             name_to_pango_style (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "weight"))
             {
-                pango_font_description_set_weight (parent->pangofont,
+                pango_font_description_set_weight (newgrp,
                             name_to_pango_weight (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "variant"))
             {
-                pango_font_description_set_variant (parent->pangofont,
+                pango_font_description_set_variant (newgrp,
                             name_to_pango_variant (attrib_vals[idx]));
             }
             else if (STRMATCH(a, "stretch"))
             {
-                pango_font_description_set_stretch (parent->pangofont,
+                pango_font_description_set_stretch (newgrp,
                             name_to_pango_stretch (attrib_vals[idx]));
             }
 
             ++idx;
         }
 
-        newgrp = NULL;
+        //newgrp = NULL;
     }
     else if (STRMATCH(element_name, "pageheader"))
     {
@@ -808,27 +809,52 @@ start_element_main (GMarkupParseContext *context,
     }
     else if (STRMATCH(element_name, "padding"))
     {
-        GRPINF *prnt = parent;    // Convenience
-        // TODO: parent==0 ->> error??
-
-        if (prnt->grptype == GRPTY_GROUP)
+        switch (parent->grptype)
         {
-            if (!prnt->padding)
-            {
-                prnt->padding = g_malloc0(sizeof(ROWPAD));
-                // Init all to -1 to flag "not set"
-                prnt->padding->left = -1;
-                prnt->padding->right = -1;
-                prnt->padding->top = -1;
-                prnt->padding->bottom = -1;
-                prnt->padding = set_padding_attribs (prnt->padding,
-                                                     attrib_names,
-                                                     attrib_vals);
-            }
-        }
+            int idx;
 
-        //newgrp = prnt->padding;
-        newgrp = NULL;
+            case GRPTY_GROUP:
+
+                if (!newgrp)
+                {
+                    ROWPAD *pads = parent->padding;
+                    pads = g_malloc0(sizeof(ROWPAD));
+                    // Init all to -1 to flag "not set"
+                    pads->left = -1;
+                    pads->right = -1;
+                    pads->top = -1;
+                    pads->bottom = -1;
+                    newgrp = set_padding_attribs (parent->padding,
+                                                  attrib_names,
+                                                  attrib_vals);
+                }
+
+                break;
+            case GRPTY_CELL:
+                newgrp = parent;
+                idx = 0;
+
+                while (attrib_names[idx])
+                {
+                    if (STRMATCH(attrib_names[idx], "left"))
+                    {
+                        ((CELLINF *)newgrp)->padleft =
+                                        atoi (attrib_vals[idx]);
+                    }
+                    else if (STRMATCH(attrib_names[idx], "right"))
+                    {
+                        ((CELLINF *)newgrp)->padright =
+                                        atoi (attrib_vals[idx]);
+                    }
+
+                    ++idx;
+                }
+
+                break;
+            default:
+                newgrp = parent;
+                break;
+        }
        
     }
     else if (STRMATCH(element_name, "defaultpadding"))
@@ -867,20 +893,12 @@ end_element_main (GMarkupParseContext  *context,
     StylePrintTablePrivate *priv;
     priv = style_print_table_get_instance_private (self);
     
-//    if (this_grp)      // If anywhere but in top-level parse
-//    {
     // Pop this item off the List
     if (priv->elList)
     {
         priv->elList = g_slist_delete_link (priv->elList,
                                             g_slist_nth(priv->elList, 0));
     }
-        //gpointer ptr = g_markup_parse_context_pop (context);
-//    }
-//    if (STRMATCH(element_name, "group") || STRMATCH(element_name, "body")
-//            || STRMATCH(element_name, "priv->defaultcell")
-//            || STRMATCH(element_name, "pageheader"))
-
 }
 
 // Set up default PrintSettings
