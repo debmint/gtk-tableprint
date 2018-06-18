@@ -796,6 +796,17 @@ start_element_main (GMarkupParseContext *context,
 
         //newgrp = NULL;
     }
+    else if (STRMATCH(element_name, "docheader"))
+    {
+        if (! priv->DocHeader)
+        {
+             priv->DocHeader =
+                    allocate_new_group ( self, attrib_names, attrib_vals,
+                            NULL, GRPTY_DOCHD);
+        }
+
+        newgrp =  priv->DocHeader;
+    }
     else if (STRMATCH(element_name, "pageheader"))
     {
         if (! priv->PageHeader)
@@ -1611,6 +1622,14 @@ render_page (StylePrintTable *self)
         lastrow = priv->pgresult->len;
     }
 
+    if (!priv->pageno)       // If first page, print Docheader if present
+    {
+        if (priv->DocHeader)
+        {
+            render_header (self, priv->DocHeader);
+        }
+    }
+
     if (priv->PageHeader)
     {
         render_header (self, priv->PageHeader);
@@ -1629,16 +1648,10 @@ render_page (StylePrintTable *self)
 //                            0, priv->layout, priv->datarow, priv->datarow + 1);
 //        }
     }
-    else if (!priv->pageno)       // If first page, print Docheader if present
-    {
-        if (priv->DocHeader)
-        {
-        }
-    }
-
-    curgrp = priv->grpHd;
 
     // Now we're ready to render the data...
+    curgrp = priv->grpHd;
+
     if (curgrp->grptype == GRPTY_GROUP)
     {
         render_group (self, curgrp, lastrow);
