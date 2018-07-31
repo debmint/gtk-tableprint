@@ -318,6 +318,8 @@ style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
                                                             data, filename);
         g_ptr_array_free (data, TRUE);
     }
+
+    PQfinish (pgprnt->conn);      //Close connection and clean up
 }
 
 /**
@@ -351,6 +353,8 @@ style_print_pg_fromxmlstring ( StylePrintPg  *pgprnt,
                                                             data, xmlstr);
         g_ptr_array_free (data, TRUE);
     }
+
+    PQfinish (pgprnt->conn);      //Close connection and clean up
 }
 
 /**

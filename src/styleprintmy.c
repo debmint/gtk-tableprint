@@ -550,6 +550,8 @@ style_print_my_fromxmlfile ( StylePrintMy *myprnt,
                                                             data, filename);
         g_ptr_array_free (data, TRUE);
     }
+
+    mysql_close (&(myprnt->MYconn));
 }
 
 /**
@@ -591,6 +593,8 @@ style_print_my_fromxmlstring ( StylePrintMy *myprnt,
                                                             data, xmlstr);
         g_ptr_array_free (data, TRUE);
     }
+
+    mysql_close (&(myprnt->MYconn));
 }
 
 /**
