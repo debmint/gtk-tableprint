@@ -134,6 +134,21 @@ style_print_pg_connect (StylePrintPg *self, gchar *dbn)
 }
 
 /**
+ * style_print_pg_use_conn:
+ * @self: The #StylePrintPg
+ * @conn: An existing (already-established) PGconn
+ *
+ * This stores an already-established PGconnection rather than making
+ * a new one.
+ */
+
+void
+style_print_pg_use_conn(StylePrintPg *self, PGconn *conn)
+{
+    self->conn = conn;
+}
+
+/**
  * style_print_pg_appendParam:
  * @self: The #StylePrintTable *
  * @param: The parameter value to add.

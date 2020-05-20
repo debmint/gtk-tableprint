@@ -50,6 +50,7 @@ struct _StylePrintPgClass
 
 StylePrintPg * style_print_pg_new (void);
 gint style_print_pg_connect (StylePrintPg *self, gchar *dbn);
+void style_print_pg_use_conn(StylePrintPg *self, PGconn *conn);
 
 void style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
                                       GtkWindow *win,

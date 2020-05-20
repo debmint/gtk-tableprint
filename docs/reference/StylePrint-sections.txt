@@ -20,6 +20,7 @@ STYLE_PRINT_TYPE_PG
 StylePrintPgClass
 style_print_pg_new
 style_print_pg_connect
+style_print_pg_use_conn
 style_print_pg_fromxmlfile
 style_print_pg_fromxmlstring
 style_print_pg_do

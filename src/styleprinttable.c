@@ -758,7 +758,15 @@ start_element_main (GMarkupParseContext *context,
         while (attrib_names[idx])
         {
             const char *a = attrib_names[idx];
-            newgrp = parent->pangofont;
+
+            if (parent && (parent->pangofont))
+            {
+                newgrp = parent->pangofont;
+            }
+            else
+            {
+                newgrp = pango_font_description_new();
+            }
 
             if ( STRMATCH(a, "family"))
             {
@@ -1832,6 +1840,19 @@ style_print_table_from_xmlfile (StylePrintTable *self,
    
     priv = style_print_table_get_instance_private (self);
 
+    // If data is empty or not defined, abort with error message
+
+    if ((data == NULL) || (data->len == 0))
+    {
+        GString *errmsg;
+        errmsg = g_string_new (NULL);
+        g_string_printf (errmsg,
+                "Error! Data to print was either not defined or empty");
+        report_error (self, errmsg->str);
+        g_string_free (errmsg, TRUE);
+        return;
+    }
+
     if (wmain)
     {
         priv->w_main = wmain;
@@ -1904,6 +1925,19 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
     StylePrintTablePrivate *priv;
    
     priv = style_print_table_get_instance_private (self);
+
+    // If data is empty or not defined, abort with error message
+
+    if ((data == NULL) || (data->len == 0))
+    {
+        GString *errmsg;
+        errmsg = g_string_new (NULL);
+        g_string_printf (errmsg,
+                "Error! Data to print was either not defined or empty");
+        report_error (self, errmsg->str);
+        g_string_free (errmsg, TRUE);
+        return;
+    }
 
     if (wmain)
     {
