@@ -169,6 +169,11 @@ void style_print_table_from_xmlstring (StylePrintTable *tp,
                                              GPtrArray *data,
                                                   char *c);
 
+void style_print_table_from_array (StylePrintTable  *self,
+                                         GtkWindow  *wmain,
+                                         GPtrArray  *data,
+                                             gchar **xml);
+
 void style_print_table_greet(       StylePrintTable *self,
                                               GPtrArray *ary);
 

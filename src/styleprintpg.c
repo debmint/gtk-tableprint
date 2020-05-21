@@ -52,6 +52,7 @@ struct _StylePrintPg
 
     /*< private >*/
     PGconn    *conn;
+    gboolean   externConn;
     GPtrArray *qryParams;
 };
 
@@ -65,6 +66,7 @@ style_print_pg_init (StylePrintPg *pg)
 {
     pg->conn = NULL;
     pg->qryParams = NULL;
+    pg->externConn = FALSE;
     //pg->pgresult = NULL;
 }
 
@@ -136,7 +138,7 @@ style_print_pg_connect (StylePrintPg *self, gchar *dbn)
 /**
  * style_print_pg_use_conn:
  * @self: The #StylePrintPg
- * @conn: An existing (already-established) PGconn
+ * @conn: An existing (already-established) #PGconn
  *
  * This stores an already-established PGconnection rather than making
  * a new one.
@@ -146,6 +148,7 @@ void
 style_print_pg_use_conn(StylePrintPg *self, PGconn *conn)
 {
     self->conn = conn;
+    self->externConn = TRUE;
 }
 
 /**
@@ -334,7 +337,10 @@ style_print_pg_fromxmlfile ( StylePrintPg *pgprnt,
         g_ptr_array_free (data, TRUE);
     }
 
-    PQfinish (pgprnt->conn);      //Close connection and clean up
+    if (!pgprnt->externConn)
+    {
+        PQfinish (pgprnt->conn);      //Close connection and clean up
+    }
 }
 
 /**
@@ -369,7 +375,54 @@ style_print_pg_fromxmlstring ( StylePrintPg  *pgprnt,
         g_ptr_array_free (data, TRUE);
     }
 
-    PQfinish (pgprnt->conn);      //Close connection and clean up
+    if (!pgprnt->externConn)
+    {
+        PQfinish (pgprnt->conn);      //Close connection and clean up
+    }
+}
+
+/**
+ * style_print_pg_fromarray:
+ * @pgprnt: The #StylePrintPg
+ * @win: (nullable): The parent window - NULL if none
+ * @qry: The query that will retrieve the data 
+ * @params: (nullable) (element-type utf8): Parameters for the query
+ * @xml: Pointer to the array of strings making up the xml formatting
+ * code.
+ *
+ * Print a table where the definition for the format is contained in a
+ * null-terminated array of strings which make up the xml definition for
+ * the printout.
+ *
+ * This array would normally be passed as a #GPtrArray, but this needs a
+ * simple array.  If a #GPtrArray is used, pass only the ->pdata portion
+ * of that structure.
+ *
+ */
+
+void
+style_print_pg_fromarray (StylePrintPg  *pgprnt,
+                             GtkWindow  *win,
+                            const gchar *qry,
+                             GPtrArray  *params,
+                                 gchar **xml)
+{
+    GPtrArray *data;
+
+    style_print_table_set_wmain (STYLE_PRINT_TABLE(pgprnt), win);
+    data = qry_get_data (pgprnt, qry, params);
+
+    if (data)
+    {
+        style_print_table_from_array (STYLE_PRINT_TABLE(pgprnt), win,
+                                    data, xml);
+        g_ptr_array_free (data, TRUE);
+    }
+
+    if (!pgprnt->externConn)
+    {
+        PQfinish (pgprnt->conn);      //Close connection and clean up
+    }
 }
 
 /**

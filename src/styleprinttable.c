@@ -1964,6 +1964,81 @@ style_print_table_from_xmlstring (  StylePrintTable *self,
 }
 
 /**
+ * style_print_table_from_array:
+ * @self: The #StylePrintTable
+ * @wmain: (nullable): The parent window - NULL if none
+ * @data: (element-type GHashTable): The data to process - A GPtrArray of GHashTables
+ * @xml: Pointer to the null-terminated array of strings containing the
+ * xml formatting
+ *
+ * Print a table where the definition for the format is contained in a
+ * null-terminated array of strings representing the xml definition for
+ * the printout.
+ *
+ * Note: In a C program, the xml would normally be contained in a #GPtrArray,
+ * but in this case, the ->pdata should be passed
+ *
+ */
+
+void
+style_print_table_from_array (  StylePrintTable  *self,
+                                      GtkWindow  *wmain,
+                                      GPtrArray  *data,
+                                          gchar **xml)
+{
+    GMarkupParseContext *gmp_contxt;
+    GError *error;
+    StylePrintTablePrivate *priv;
+    gint idx = 0;
+   
+    priv = style_print_table_get_instance_private (self);
+
+    // If data is empty or not defined, abort with error message
+
+    if ((data == NULL) || (data->len == 0))
+    {
+        GString *errmsg;
+        errmsg = g_string_new (NULL);
+        g_string_printf (errmsg,
+                "Error! Data to print was either not defined or empty");
+        report_error (self, errmsg->str);
+        g_string_free (errmsg, TRUE);
+        return;
+    }
+
+    if (wmain)
+    {
+        priv->w_main = wmain;
+    }
+
+    priv->pgresult = data;
+
+    gmp_contxt =
+        g_markup_parse_context_new (&prsr, G_MARKUP_TREAT_CDATA_AS_TEXT,
+                self, NULL);
+
+    error = NULL;
+
+    while (xml[idx] != NULL)
+    {
+        error = NULL;
+
+        if (!g_markup_parse_context_parse (gmp_contxt, xml[idx],
+                    strlen(xml[idx]), &error))
+        {
+            report_error (self, error->message);
+        }
+
+        ++idx;
+    }
+
+    reset_default_cell (self);
+    render_report (self);
+    //free_default_cell (self);
+    g_markup_parse_context_free (gmp_contxt);
+}
+
+/**
  * style_print_table_new:
  *
  * Creates a new #StylePrintTable.

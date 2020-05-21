@@ -23,6 +23,7 @@ style_print_pg_connect
 style_print_pg_use_conn
 style_print_pg_fromxmlfile
 style_print_pg_fromxmlstring
+style_print_pg_fromarray
 style_print_pg_do
 style_print_pg_appendParam
 StylePrintPg
@@ -37,6 +38,7 @@ STRMATCH
 STRNMATCH
 style_print_table_from_xmlfile
 style_print_table_from_xmlstring
+style_print_table_from_array
 style_print_table_greet
 style_print_table_new
 style_print_table_set_wmain
