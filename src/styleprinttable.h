@@ -102,7 +102,7 @@ enum {
     TSRC_PAGE,          // Cell prints "Page"
     TSRC_PAGEOF,        // Cell prints "Page X of Y"
     TSRC_PRINTF         // Printf-formatted data
-} DataSources;
+};
 
 /**
  * GRPTY:
@@ -124,7 +124,7 @@ enum {
     GRPTY_DOCHD,
     GRPTY_CELL,
     GRPTY_FONT
-} GRPTY;
+};
 
 // Group border bitmap
 /**
@@ -144,7 +144,7 @@ enum
     DBLBAR        = 1 << 2,
     SINGLEBOX     = 1 << 3,
     DBLBOX        = 1 << 4
-} BorderStyles;
+};
 
 /**
  * BodyLines:
@@ -157,7 +157,7 @@ enum
 {
     BDY_HLINE = 1 << 7,
     BDY_VBAR  = 1 << 8
-} BodyLines;
+};
 
 void style_print_table_from_xmlfile (StylePrintTable *tblprnt,
                                            GtkWindow *win,
