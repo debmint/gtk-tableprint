@@ -1,4 +1,5 @@
-Moved to https://gitlab.com/debmint/gtk-tableprint
+# Moved to https://gitlab.com/debmint/gtk-tableprint
+
 
 This is a library to add the ability to print hardcopy reports in
 tabular form.  It will do the calculations for print position and
@@ -15,7 +16,7 @@ by any programming language that supports GObject-Introspection.
 
 ===================================================================
 
-INSTALLATION NOTES
+### INSTALLATION NOTES
 
 Please read the file "INSTALL" for general instructions on how to
 build and install the program.  In addition to the instructions in
@@ -28,7 +29,7 @@ disabled by default.
 
 ===================================================================
 
-SELECTING COMPONENTS TO BUILD
+### SELECTING COMPONENTS TO BUILD
 
 The primary module - which is _always_ built, is StylePrintTable.
 Additional modules for use with specific databases, are optional,
